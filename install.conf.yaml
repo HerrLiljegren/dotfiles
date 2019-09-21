@@ -9,5 +9,5 @@
     ~/.oh-my-zsh: oh-my-zsh/
     ~/.oh-my-zsh/custom/themes/powerlevel10k:
         path: oh-my-zsh-themes/powerlevel10k
-    ~/.pk10.zsh: pk10.zsh
+    ~/.p10k.zsh: p10k.zsh
     ~/.vimrc: vimrc
