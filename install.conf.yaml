@@ -1,0 +1,13 @@
+- clean: ['~']
+
+- shell:
+  - [git submodule update --init --recursive, Installing submodules]
+  - [git submodule update --recursive, updating submodules]
+
+- link:
+    ~/.zshrc: zshrc
+    ~/.oh-my-zsh: oh-my-zsh/
+    ~/.oh-my-zsh/custom/themes/powerlevel10k:
+      create: true
+      path: oh-my-zsh-themes/powerlevel10k
+    ~/.vimrc: vimrc
