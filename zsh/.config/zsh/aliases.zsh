@@ -1,0 +1,11 @@
+# Aliases
+alias reload='exec zsh'
+alias config='nvim ${ZDOTDIR:-~}/.zshrc'
+alias plugins='nvim ${ZDOTDIR:-~}/.zsh_plugins.txt'
+alias l='eza -lh --icons --git --group-directories-first'
+alias ll='eza -lah --icons --git --group-directories-first'
+alias c='clear'
+#alias cat='bat'
+alias -g -- -h='-h 2>&1 | bat --language=help --style=plain'
+alias -g -- --help='--help 2>&1 | bat --language=help --style=plain'
+alias dots='fd -t f -H . ~/dotfiles | fzf --preview "bat --color=always {}" | xargs -r nvim'

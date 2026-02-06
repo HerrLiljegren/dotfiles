@@ -1,0 +1,63 @@
+# Get editor completions based on the config schema
+"$schema" = 'https://starship.rs/config-schema.json'
+
+# Insert a blank line between shell prompts (breathing room)
+add_newline = true
+
+# Replace the "via..." text with icons to save space
+format = """
+[╭─](fg:blue)$directory$git_branch$git_status$dotnet$docker_context
+[╰─](fg:blue)$character
+"""
+# format = """
+# $directory\
+# $git_branch\
+# $git_status\
+# $dotnet\
+# $docker_context\
+# $line_break\
+# $character"""
+
+# --- Core Aesthetics ---
+[character]
+success_symbol = "[➜](bold green)"
+error_symbol = "[✗](bold red)"
+vimcmd_symbol = "[V](bold green)" 
+
+[directory]
+truncation_length = 3
+truncate_to_repo = false # Keep full path context inside repos
+style = "bold blue"
+
+# --- Git Integration ---
+[git_branch]
+symbol = " "
+style = "bold purple"
+
+[git_status]
+conflicted = "🏳"
+ahead = "⇡${count}"
+behind = "⇣${count}"
+diverged = "⇕⇡${ahead_count}⇣${behind_count}"
+untracked = "?${count}"
+stashed = "📦"
+modified = "!${count}"
+staged = "+${count}"
+renamed = "»${count}"
+deleted = "✘${count}"
+style = "bold yellow"
+
+# --- Tech Stack (NET Focus) ---
+[dotnet]
+symbol = " "
+style = "blue"
+# Only show when a sln/csproj/fsproj/xproj is present
+detect_extensions = ["sln", "csproj", "fsproj", "xproj"] 
+# Heuristic to find version file faster
+detect_files = ["global.json", "Directory.Build.props"] 
+
+# --- Docker ---
+[docker_context]
+symbol = " "
+style = "blue dimmed"
+only_with_files = true # Only show if docker-compose/Dockerfile exists

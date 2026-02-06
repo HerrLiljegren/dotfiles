@@ -1,0 +1,19 @@
+zsh-users/zsh-autosuggestions
+zsh-users/zsh-syntax-highlighting
+zsh-users/zsh-completions
+
+# Oh-my-zsh dependency management
+getantidote/use-omz
+
+# Make Zsh more featureful
+# Git status is faster
+# History and other enhancements
+# See: https://github.com/ohmyzsh/ohmyzsh/tree/master/lib
+ohmyzsh/ohmyzsh path:lib
+
+# Oh-my-zsh plugins
+ohmyzsh/ohmyzsh path:plugins/git
+# romkatv/powerlevel10k
+aloxaf/fzf-tab
+zsh-users/zsh-history-substring-search
+MichaelAquilina/zsh-you-should-use
