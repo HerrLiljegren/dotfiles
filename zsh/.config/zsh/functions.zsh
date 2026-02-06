@@ -32,3 +32,42 @@ zstyle ':fzf-tab:complete:(-command-|-parameter-|-brace-parameter-|export|unset|
 
 # Force the preview window to take 75% of the space
 zstyle ':fzf-tab:*' fzf-flags '--preview-window=right:75%'
+
+updot() {
+  local msg="$1"
+  local prompt="Generate a concise, one-line git commit message based on the following diff. Use conventional commits (e.g., feat:, fix:, chore:). Output ONLY the message text."
+
+  # 1. Handle Nvim Submodule
+  if [[ -d "nvim/.config/nvim/.git" ]]; then
+    echo "Checking Nvim submodule..."
+    (
+      cd nvim/.config/nvim
+      if [[ -n $(git status -s) ]]; then
+        git add .
+        local nvim_msg="$msg"
+        if [[ -z "$nvim_msg" ]]; then
+          echo "🤖 Generating Nvim commit message via OpenCode..."
+          nvim_msg=$(git diff --cached | opencode run "$prompt" --model google/gemini-3-flash-preview)
+        fi
+        git commit -m "$nvim_msg"
+        git push origin master
+        echo "✅ Nvim fork updated: $nvim_msg"
+      fi
+    )
+  fi
+
+  # 2. Handle Parent Dotfiles
+  echo "Updating parent dotfiles..."
+  git add .
+  if ! git diff --cached --quiet; then
+    if [[ -z "$msg" ]]; then
+      echo "🤖 Generating Dotfiles commit message via OpenCode..."
+      msg=$(git diff --cached | opencode run "$prompt" --model google/gemini-3-flash-preview)
+    fi
+    git commit -m "$msg"
+    git push origin main
+    echo "✅ Dotfiles pushed: $msg"
+  else
+    echo "--- Nothing to commit in parent."
+  fi
+}
