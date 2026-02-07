@@ -1,0 +1,36 @@
+[user]
+	name = Jesper Liljegren
+	email = jesper.liljegren@gmail.com
+
+[init]
+	defaultBranch = main
+
+[core]
+	editor = nvim
+	autocrlf = input
+	# Exclude file for global gitignore patterns
+	excludesfile = ~/.config/git/ignore
+
+[pull]
+	rebase = false
+
+[push]
+	default = simple
+	autoSetupRemote = true
+
+[color]
+	ui = auto
+
+[alias]
+	lg = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit
+	amend = commit --amend --no-edit
+
+[diff]
+	colorMoved = zebra
+
+[merge]
+	conflictStyle = diff3
+
+# Conditional includes for work directories
+[includeIf "gitdir:~/tengella/"]
+	path = ~/.config/git/config-work

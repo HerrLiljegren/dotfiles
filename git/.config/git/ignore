@@ -1,0 +1,19 @@
+# Global gitignore patterns
+# This file is referenced by core.excludesfile in git config
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+
+# Backup files
+*.bak
+*.old
