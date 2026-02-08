@@ -27,7 +27,10 @@ EOF
 # --- 1. Initialization ---
 print_logo
 log_info "Synchronizing System Repos..."
-sudo pacman -Syu --noconfirm | grep -E "upgrading|installing|removing" || log_success "System is already up to date."
+system_updates_raw="$(sudo pacman -Syu --noconfirm | grep -E "upgrading|installing|removing" | tee /dev/stderr || true)"
+if [ -z "$system_updates_raw" ]; then
+    log_success "System is already up to date."
+fi
 
 # Bootstrap Paru
 if ! command -v paru &> /dev/null; then
@@ -38,7 +41,10 @@ if ! command -v paru &> /dev/null; then
 fi
 
 log_info "Synchronizing AUR Repos..."
-paru -Sua --noconfirm | grep -E "upgrading|installing" || log_success "AUR is already up to date."
+aur_updates_raw="$(paru -Sua --noconfirm | grep -E "upgrading|installing" | tee /dev/stderr || true)"
+if [ -z "$aur_updates_raw" ]; then
+    log_success "AUR is already up to date."
+fi
 
 # --- 2. Installation ---
 source "$FORGE_ROOT/packages.conf"
@@ -70,9 +76,39 @@ fi
 log_success "Forge Complete."
 echo -e "\n${CLR_DIM}------------------------------------------${CLR_RESET}"
 
+installed_summary=""
+if [ ${#FORGE_INSTALLED_PACKAGES[@]} -gt 0 ]; then
+    installed_summary="$(printf '%s\n' "${FORGE_INSTALLED_PACKAGES[@]}")"
+fi
+
+format_summary_block() {
+    local label="$1"
+    local content="$2"
+    local count
+
+    if [ -n "$content" ]; then
+        count="$(printf '%s\n' "$content" | wc -l | tr -d ' ')"
+    else
+        count=0
+    fi
+
+    printf '  %b%s%b (%s)\n' "$CLR_DIM" "$label" "$CLR_RESET" "$count"
+    if [ -n "$content" ]; then
+        while IFS= read -r line; do
+            [ -n "$line" ] && printf '    %b•%b %s\n' "$CLR_DIM" "$CLR_RESET" "$line"
+        done <<< "$content"
+    else
+        printf '    %b•%b none\n' "$CLR_DIM" "$CLR_RESET"
+    fi
+}
+
 cat << EOF
   Forge Details:
   - Repository: $(git rev-parse --abbrev-ref HEAD) @ $(git rev-parse --short HEAD)
   - Packages:   $(echo "${SYSTEM_UTILS[@]} ${DEV_TOOLS[@]}" | wc -w) tracked
   - Services:   ${#SERVICES[@]} system / ${#USER_SERVICES[@]} user
 EOF
+
+format_summary_block "System updates" "$system_updates_raw"
+format_summary_block "AUR updates" "$aur_updates_raw"
+format_summary_block "Installed by Forge" "$installed_summary"

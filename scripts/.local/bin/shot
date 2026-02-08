@@ -1,0 +1,134 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+app_name="shot"
+mode="${1:-}"
+viewer="swayimg"
+
+state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/shot"
+last_region_file="$state_dir/last_region"
+
+pictures_dir="${XDG_PICTURES_DIR:-$HOME/Pictures}"
+save_dir="$pictures_dir/Screenshots"
+
+timestamp="$(date +%Y%m%d-%H%M%S)"
+output_file="$save_dir/shot-$timestamp.png"
+tmp_file="$(mktemp --suffix=.png /tmp/shot-XXXXXXXX)"
+
+notify() {
+  notify-send -t 2000 "Screenshot" "$1"
+}
+
+notify_error() {
+  notify-send -u critical -t 4000 "Screenshot" "$1"
+}
+
+cleanup() {
+  if [ -f "$tmp_file" ] && [ "${keep_tmp:-0}" -eq 0 ]; then
+    rm -f "$tmp_file"
+  fi
+}
+
+trap cleanup EXIT
+
+mkdir -p "$state_dir" "$save_dir"
+
+capture_region() {
+  local geom
+  if ! geom="$(slurp)"; then
+    exit 0
+  fi
+
+  if [ -z "$geom" ]; then
+    exit 0
+  fi
+
+  printf '%s' "$geom" > "$last_region_file"
+  grim -g "$geom" "$tmp_file"
+}
+
+capture_window() {
+  local geom
+  geom="$(hyprctl -j activewindow | jq -r '"\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"')"
+
+  if [ -z "$geom" ] || printf '%s' "$geom" | grep -q 'null'; then
+    notify_error "No active window to capture"
+    exit 1
+  fi
+
+  grim -g "$geom" "$tmp_file"
+}
+
+capture_full() {
+  grim "$tmp_file"
+}
+
+capture_last() {
+  if [ ! -f "$last_region_file" ]; then
+    notify_error "No last region yet"
+    exit 1
+  fi
+
+  grim -g "$(cat "$last_region_file")" "$tmp_file"
+}
+
+case "$mode" in
+  region)
+    capture_region
+    ;;
+  window)
+    capture_window
+    ;;
+  full)
+    capture_full
+    ;;
+  last)
+    capture_last
+    ;;
+  *)
+    notify_error "Usage: $app_name region|window|full|last"
+    exit 2
+    ;;
+esac
+
+menu_choice="$(
+  printf '%s\n' \
+    "Copy to clipboard" \
+    "Save to file" \
+    "Annotate" \
+    "Open in viewer" \
+    | walker --dmenu
+)"
+
+case "$menu_choice" in
+  "Copy to clipboard")
+    wl-copy < "$tmp_file"
+    notify "Copied to clipboard"
+    ;;
+  "Save to file")
+    mv "$tmp_file" "$output_file"
+    printf '%s' "$output_file" | wl-copy
+    notify "Saved to $output_file (path copied)"
+    ;;
+  "Annotate")
+    satty --filename "$tmp_file" --output-filename "$output_file"
+    ;;
+  "Open in viewer")
+    if ! command -v "$viewer" >/dev/null 2>&1; then
+      notify_error "$viewer not installed"
+      exit 1
+    fi
+    mv "$tmp_file" "$output_file"
+    printf '%s' "$output_file" | wl-copy
+    "$viewer" "$output_file" >/dev/null 2>&1 &
+    notify "Saved and opened $output_file (path copied)"
+    ;;
+  "")
+    exit 0
+    ;;
+  *)
+    notify_error "Unknown option"
+    exit 1
+    ;;
+esac

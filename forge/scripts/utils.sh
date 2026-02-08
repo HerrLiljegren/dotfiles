@@ -34,6 +34,8 @@ install_packages() {
     if [ ${#to_install[@]} -ne 0 ]; then
         paru -S --noconfirm "${to_install[@]}"
     fi
+
+    FORGE_INSTALLED_PACKAGES=("${to_install[@]}")
 }
 
 enable_user_services() {

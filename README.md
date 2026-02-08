@@ -25,6 +25,9 @@ Instead of manual symlinking, use **Stow** to map your configuration packages to
 # Mirrors zsh, nvim, and starship into your ~/.config
 stow zsh nvim starship
 
+# Scripts and small utilities into ~/.local/bin
+stow scripts
+
 ```
 
 ### 4. Bootstrap
@@ -47,6 +50,10 @@ Automate the "Double Commit" (Nvim submodule + Parent repo) with AI-generated me
 The ultimate "find and edit" command.
 
 * **`dots`**: Triggers a fuzzy search (via `fzf` and `fd`) with a live `bat` preview of your configs. Pressing `Enter` opens the file in your Nvim/Kickstart setup.
+
+### Screenshots (Greenshot-style on Hyprland)
+
+The `shot` script emulates Greenshot muscle-memory on Hyprland (region/window/full/last) and shows a destination chooser for copy/save/annotate/open.
 
 ---
 

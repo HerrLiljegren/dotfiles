@@ -1,0 +1,78 @@
+# Minimal, dark swayimg config (Catppuccin-inspired)
+
+[general]
+mode = viewer
+size = 1280,720
+decoration = no
+
+[viewer]
+window = #1e1e2eff
+transparency = #1e1e2eff
+scale = optimal
+position = center
+antialiasing = mks13
+loop = yes
+history = 1
+preload = 1
+
+[font]
+name = monospace
+size = 13
+color = #cdd6f4ff
+shadow = #000000d0
+background = #1e1e2eaa
+
+[info]
+show = yes
+padding = 10
+info_timeout = 0
+status_timeout = 2
+
+[info.viewer]
+top_left = name,dir,imagesize,filesize
+top_right = index
+bottom_left = scale
+bottom_right = status
+
+[gallery]
+size = 300
+selected_scale = 1
+aspect = fit
+padding = 10
+select = #a6e3a1ff
+background = #11111bff
+border_color = #a6e3a1ff
+border_width = 1
+window = #11111bff
+
+[info.gallery]
+top_left = name
+top_right = index
+bottom_left = dir
+bottom_right = status
+
+[keys.viewer]
+Ctrl+c = exec wl-copy --type image/png < '%' && echo "Image copied"
+Ctrl+Shift+c = exec printf '%s' '%' | wl-copy && echo "Path copied"
+i = info
+f = fullscreen
+Escape = exit
+q = exit
+ScrollUp = prev_file
+ScrollDown = next_file
+h = prev_file
+l = next_file
+j = next_file
+k = prev_file
+
+[keys.gallery]
+Left = step_left
+Right = step_right
+Up = step_up
+Down = step_down
+h = step_left
+l = step_right
+k = step_up
+j = step_down
+Shift+h = prev_file
+Shift+l = next_file
