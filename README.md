@@ -61,3 +61,15 @@ The ultimate "find and edit" command.
 | **AI CLI** | OpenCode (google/gemini-3-flash-preview) |
 | **Navigation** | Zoxide + fzf-tab |
 
+## Paru
+
+| Command | What it actually does |
+| ------- | --------------------- |
+| paru | Just typing the name with no flags runs a full system update (including AUR). |
+| paru -Sua | Updates only your AUR packages (skips the main system sync). |
+| paru -Sc | The Janitor: Cleans out uninstalled cached files. Keeps your SSD lean. |
+| paru -Rns | The Clean Uninstall: Removes the app and its dependencies and its config files. |
+| - | - |
+| paru -Si <package> | View the "Stats" before installing (license, size, dependencies). |
+| paru -Ql <package> | "Where did the files go?" Shows every file the package installed. |
+| paru -G <package> | "Get" the build files. Downloads the PKGBUILD so you can inspect how it’s built. |
