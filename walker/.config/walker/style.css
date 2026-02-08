@@ -1,0 +1,36 @@
+/* Window container */
+#window {
+  background-color: rgba(26, 27, 38, 0.85); /* Dark background with transparency */
+  border: 1px solid #ff4444; /* Forge Red border */
+  border-radius: 12px;
+  font-family: "FiraCode Nerd Font";
+}
+
+/* Search input area */
+#search {
+  padding: 16px;
+  font-size: 1.2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Individual result items */
+#item {
+  padding: 8px 16px;
+  border-radius: 8px;
+  margin: 2px 8px;
+}
+
+/* Highlighted item (selection) */
+#item:selected {
+  background-color: rgba(255, 68, 68, 0.2); /* Faded red highlight */
+  border-left: 3px solid #ff4444;
+}
+
+#text {
+  color: #c0caf5;
+}
+
+#text:selected {
+  color: #ffffff;
+  font-weight: bold;
+}

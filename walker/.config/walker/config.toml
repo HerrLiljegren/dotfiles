@@ -1,0 +1,36 @@
+[ui]
+fullscreen = false
+width = 600
+height = 400
+horizontal_status = true
+show_icons = true
+
+[preview]
+enabled = true
+width = 300
+
+[search]
+placeholder = "Forge Search..."
+delay = 0
+
+[modules]
+# Match the packages we installed in packages.conf
+[[modules.definitions]]
+name = "applications"
+prefix = ""
+
+[[modules.definitions]]
+name = "calc"
+prefix = "="
+
+[[modules.definitions]]
+name = "runner"
+prefix = "!"
+
+[[modules.definitions]]
+name = "finder"
+prefix = "/"
+
+[[modules.definitions]]
+name = "clipboard"
+prefix = "cl "  # Or no prefix if you want it mixed in
