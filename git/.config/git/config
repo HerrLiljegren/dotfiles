@@ -18,6 +18,9 @@
 	default = simple
 	autoSetupRemote = true
 
+[interactive]
+	diffFilter = delta --color-only
+
 [color]
 	ui = auto
 
@@ -29,8 +32,12 @@
 	colorMoved = zebra
 
 [merge]
-	conflictStyle = diff3
+	conflictStyle = zdiff3
 
 # Conditional includes for work directories
 [includeIf "gitdir:~/dev/tengella/"]
 	path = ~/.config/git/config-work
+
+[include]
+	path = ~/.config/delta/delta.gitconfig
+
