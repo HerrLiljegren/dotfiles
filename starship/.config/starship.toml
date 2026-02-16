@@ -24,6 +24,16 @@ success_symbol = "[➜](bold green)"
 error_symbol = "[✗](bold red)"
 vimcmd_symbol = "[V](bold green)" 
 
+[username]
+show_always = true
+style_user = "fg:cyan bold"
+format = "[$user]($style)"
+
+[hostname]
+ssh_only = false
+style = "fg:cyan bold"
+format = "[@$hostname]($style) "
+
 [directory]
 truncation_length = 3
 truncate_to_repo = false # Keep full path context inside repos
@@ -61,3 +71,14 @@ detect_files = ["global.json", "Directory.Build.props"]
 symbol = " "
 style = "blue dimmed"
 only_with_files = true # Only show if docker-compose/Dockerfile exists
+
+[os]
+disabled = false
+style = "fg:cyan bold"
+format = "on [($name )]($style)"
+
+[os.symbols]
+Arch = " "        # The classic Arch logo
+CachyOS = "󠵹 "     # A common placeholder for CachyOS
+Ubuntu = " "
+Linux = " "       # Generic fallback
