@@ -1,0 +1,5 @@
+copy-on-select = clipboard
+right-click-action = paste
+theme = Catppuccin Mocha
+font-family = FiraCode Nerd Font Mono Ret
+font-size = 12
