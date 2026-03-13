@@ -12,11 +12,14 @@
 	excludesfile = ~/.config/git/ignore
 
 [pull]
-	rebase = false
+	rebase = true
 
 [push]
 	default = simple
 	autoSetupRemote = true
+
+[submodule]
+	recurse = true
 
 [interactive]
 	diffFilter = delta --color-only
