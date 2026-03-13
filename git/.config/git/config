@@ -32,12 +32,25 @@
 	colorMoved = zebra
 
 [merge]
+	tool = nvim
 	conflictStyle = zdiff3
+
+[mergetool "nvim"]
+	# Layout: Top row [Local | Base | Remote], Bottom row [Merged Result]
+	cmd = nvim -d -c \"wincmd J\" \"$LOCAL\" \"$BASE\" \"$REMOTE\" \"$MERGED\"
+
+[mergetool]
+	prompt = false
+	keepBackup = false
+
 
 # Conditional includes for work directories
 [includeIf "gitdir:~/dev/tengella/"]
 	path = ~/.config/git/config-work
 
+[credential]
+	helper = /usr/bin/git-credential-manager
+	useHttpPath = true
 [include]
 	path = ~/.config/delta/delta.gitconfig
 

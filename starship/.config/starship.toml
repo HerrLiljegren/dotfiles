@@ -1,84 +1,83 @@
-# Get editor completions based on the config schema
-"$schema" = 'https://starship.rs/config-schema.json'
-
-# Insert a blank line between shell prompts (breathing room)
+"$schema" = "https://starship.rs/config-schema.json"
 add_newline = true
-
-# Replace the "via..." text with icons to save space
+palette = "catppuccin_mocha"
 format = """
-[╭─](fg:blue)$directory$git_branch$git_status$dotnet$docker_context
-[╰─](fg:blue)$character
+[╭─](blue)$username$hostname$directory$git_branch$git_status$dotnet$docker_context
+[╰─](blue)$character
 """
-# format = """
-# $directory\
-# $git_branch\
-# $git_status\
-# $dotnet\
-# $docker_context\
-# $line_break\
-# $character"""
-
-# --- Core Aesthetics ---
+[palettes.catppuccin_mocha]
+rosewater = "#f5e0dc"
+flamingo = "#f2cdcd"
+pink = "#f5c2e7"
+mauve = "#cba6f7"
+red = "#f38ba8"
+maroon = "#eba0ac"
+peach = "#fab387"
+yellow = "#f9e2af"
+green = "#a6e3a1"
+teal = "#94e2d5"
+sky = "#89dceb"
+sapphire = "#74c7ec"
+blue = "#89b4fa"
+lavender = "#b4befe"
+text = "#cdd6f4"
+subtext1 = "#bac2de"
+subtext0 = "#a6adc8"
+overlay2 = "#9399b2"
+overlay1 = "#7f849c"
+overlay0 = "#6c7086"
+surface2 = "#585b70"
+surface1 = "#45475a"
+surface0 = "#313244"
+base = "#1e1e2e"
+mantle = "#181825"
+crust = "#11111b"
 [character]
 success_symbol = "[➜](bold green)"
 error_symbol = "[✗](bold red)"
-vimcmd_symbol = "[V](bold green)" 
-
-[username]
-show_always = true
-style_user = "fg:cyan bold"
-format = "[$user]($style)"
-
-[hostname]
-ssh_only = false
-style = "fg:cyan bold"
-format = "[@$hostname]($style) "
-
+vimcmd_symbol = "[V](bold lavender)"
 [directory]
 truncation_length = 3
-truncate_to_repo = false # Keep full path context inside repos
+truncate_to_repo = false
 style = "bold blue"
-
-# --- Git Integration ---
+format = "[ $path]($style) "
+[username]
+style_user = "bold lavender"
+style_root = "bold red"
+format = "[$user]($style)"
+disabled = false
+show_always = true
+aliases = { "corpuser034g" = "matchai" }
+[hostname]
+ssh_only = true
+trim_at = ".companyname.com"
+format = "[@$hostname](overlay1)"
+disabled = false
 [git_branch]
 symbol = " "
-style = "bold purple"
-
+style = "bold mauve"
+format = "[$symbol$branch]($style) "
 [git_status]
-conflicted = "🏳"
+style = "bold yellow"
+format = "([$all_status$ahead_behind]($style) )"
+conflicted = "="
 ahead = "⇡${count}"
 behind = "⇣${count}"
 diverged = "⇕⇡${ahead_count}⇣${behind_count}"
 untracked = "?${count}"
-stashed = "📦"
+stashed = "*${count}"
 modified = "!${count}"
 staged = "+${count}"
 renamed = "»${count}"
 deleted = "✘${count}"
-style = "bold yellow"
-
-# --- Tech Stack (NET Focus) ---
 [dotnet]
 symbol = " "
 style = "blue"
-# Only show when a sln/csproj/fsproj/xproj is present
-detect_extensions = ["sln", "csproj", "fsproj", "xproj"] 
-# Heuristic to find version file faster
-detect_files = ["global.json", "Directory.Build.props"] 
-
-# --- Docker ---
+format = "[$symbol$version]($style) "
+detect_extensions = ["sln", "csproj", "fsproj", "xproj"]
+detect_files = ["global.json", "Directory.Build.props"]
 [docker_context]
 symbol = " "
-style = "blue dimmed"
-only_with_files = true # Only show if docker-compose/Dockerfile exists
-
-[os]
-disabled = false
-style = "fg:cyan bold"
-format = "on [($name )]($style)"
-
-[os.symbols]
-Arch = " "        # The classic Arch logo
-CachyOS = "󠵹 "     # A common placeholder for CachyOS
-Ubuntu = " "
-Linux = " "       # Generic fallback
+style = "overlay1"
+format = "[$symbol$context]($style) "
+only_with_files = true
