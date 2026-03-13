@@ -34,3 +34,8 @@
 # Conditional includes for work directories
 [includeIf "gitdir:~/dev/tengella/"]
 	path = ~/.config/git/config-work
+[credential]
+	helper = 
+	helper = /usr/bin/git-credential-manager
+[credential "https://dev.azure.com"]
+	useHttpPath = true

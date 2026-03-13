@@ -2,6 +2,12 @@
 export EDITOR='nvim'
 export LANG=en_US.UTF-8
 
+export PATH="$PATH:/usr/share/dotnet"
+export PATH="$PATH:$HOME/.dotnet/tools/"
+export DOTNET_ROOT="/usr/share/dotnet"
+
+export PATH="/home/jesper/go/bin:$PATH"
+
 # Opt-out of telemetry for cleaner terminal output
 export DOTNET_CLI_TELEMETRY_OPTOUT=1
 
