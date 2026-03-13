@@ -21,9 +21,6 @@
 [submodule]
 	recurse = true
 
-[interactive]
-	diffFilter = delta --color-only
-
 [color]
 	ui = auto
 
@@ -36,7 +33,6 @@
 
 [merge]
 	tool = nvim
-	conflictStyle = zdiff3
 
 [mergetool "nvim"]
 	# Layout: Top row [Local | Base | Remote], Bottom row [Merged Result]

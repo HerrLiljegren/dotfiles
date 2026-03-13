@@ -36,9 +36,11 @@ zstyle ':fzf-tab:*' fzf-flags '--preview-window=right:75%'
 updot() {
   local msg="$1"
   local prompt="Generate a concise, one-line git commit message based on the following diff. Use conventional commits (e.g., feat:, fix:, chore:). Output ONLY the message text."
+  local model="openai/gpt-5.4"
+  local variant="low"
 
   # 1. Handle Nvim Submodule
-  if [[ -d "nvim/.config/nvim/.git" ]]; then
+  if [[ -d "nvim/.config/nvim" ]]; then
     echo "Checking Nvim submodule..."
     (
       cd nvim/.config/nvim
@@ -47,7 +49,7 @@ updot() {
         local nvim_msg="$msg"
         if [[ -z "$nvim_msg" ]]; then
           echo "🤖 Generating Nvim commit message via OpenCode..."
-          nvim_msg=$(git diff --cached | opencode run "$prompt" --model google/gemini-3-flash-preview)
+          nvim_msg=$(git diff --cached | opencode run "$prompt" --model $model --variant $variant
         fi
         git commit -m "$nvim_msg"
         git push origin master
@@ -62,7 +64,7 @@ updot() {
   if ! git diff --cached --quiet; then
     if [[ -z "$msg" ]]; then
       echo "🤖 Generating Dotfiles commit message via OpenCode..."
-      msg=$(git diff --cached | opencode run "$prompt" --model google/gemini-3-flash-preview)
+      msg=$(git diff --cached | opencode run "$prompt" --model $model --variant $variant
     fi
     git commit -m "$msg"
     git push origin main
