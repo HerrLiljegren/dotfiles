@@ -49,7 +49,7 @@ updot() {
         local nvim_msg="$msg"
         if [[ -z "$nvim_msg" ]]; then
           echo "🤖 Generating Nvim commit message via OpenCode..."
-          nvim_msg=$(git diff --cached | opencode run "$prompt" --model $model --variant $variant
+          nvim_msg=$(git diff --cached | opencode run "$prompt" --model "$model" --variant "$variant")
         fi
         git commit -m "$nvim_msg"
         git push origin master
@@ -64,7 +64,7 @@ updot() {
   if ! git diff --cached --quiet; then
     if [[ -z "$msg" ]]; then
       echo "🤖 Generating Dotfiles commit message via OpenCode..."
-      msg=$(git diff --cached | opencode run "$prompt" --model $model --variant $variant
+      msg=$(git diff --cached | opencode run "$prompt" --model "$model" --variant "$variant")
     fi
     git commit -m "$msg"
     git push origin main
