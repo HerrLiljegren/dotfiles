@@ -21,6 +21,7 @@ scrollback-limit = 3023
 mouse-hide-while-typing = true
 copy-on-select = false
 confirm-close-surface = false
+mouse-scroll-multiplier = 0.6
 
 # Disable annoying copied to clipboard
 app-notifications = no-clipboard-copy,no-config-reload

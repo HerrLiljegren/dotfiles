@@ -1,0 +1,36 @@
+#!/usr/bin/env sh
+
+set -eu
+
+PROFILE_DIR=${VIVALDI_CONFIG_DIR:-"$HOME/.config/vivaldi"}
+LOCK_FILES="SingletonLock SingletonCookie SingletonSocket"
+FORCE=${1:-}
+
+if [ ! -d "$PROFILE_DIR" ]; then
+  printf 'Vivaldi config directory not found: %s\n' "$PROFILE_DIR" >&2
+  exit 1
+fi
+
+if [ "$FORCE" = "--force" ]; then
+  :
+elif pgrep -u "$(id -u)" -f '/opt/vivaldi/vivaldi|vivaldi-stable|vivaldi-bin|/app/.*/vivaldi' >/dev/null 2>&1; then
+  printf 'Vivaldi-related processes are still running. Close them first, or rerun with --force.\n' >&2
+  exit 1
+fi
+
+removed=0
+
+for name in $LOCK_FILES; do
+  path="$PROFILE_DIR/$name"
+  if [ -e "$path" ] || [ -L "$path" ]; then
+    rm -f "$path"
+    printf 'Removed %s\n' "$path"
+    removed=1
+  fi
+done
+
+if [ "$removed" -eq 0 ]; then
+  printf 'No Vivaldi singleton lock files found in %s\n' "$PROFILE_DIR"
+else
+  printf 'Vivaldi profile lock cleared.\n'
+fi
