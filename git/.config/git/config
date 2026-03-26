@@ -50,6 +50,7 @@
 [credential]
 	helper = /usr/bin/git-credential-manager
 	useHttpPath = true
+	credentialStore = cache
 [include]
 	path = ~/.config/delta/delta.gitconfig
 
