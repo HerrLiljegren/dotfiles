@@ -48,6 +48,10 @@ eval "$(zoxide init --cmd cd zsh)"
 #eval "$(dotnet completions script zsh)"
 eval "$(starship init zsh)"
 
+# sesh
+fpath=(~/.config/zsh/completions $fpath)
+autoload -U compinit && compinit
+
 # Source files from a sub-directory to keep this file clean
 [[ -f ~/.config/zsh/aliases.zsh ]] && source ~/.config/zsh/aliases.zsh
 [[ -f ~/.config/zsh/functions.zsh ]] && source ~/.config/zsh/functions.zsh
