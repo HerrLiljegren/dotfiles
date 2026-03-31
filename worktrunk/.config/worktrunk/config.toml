@@ -1,5 +1,8 @@
-worktree-path = "../{{ branch | sanitize }}"
-skip-commit-generation-prompt = true
+# Inside the repository
+# Creates: ~/code/myproject/.worktrees/feature-auth
+worktree-path = "{{ repo_path }}/.worktrees/{{ branch | sanitize }}"
+
+#skip-commit-generation-prompt = true
 
 [commit.generation]
 # opencode — use a fast model variant

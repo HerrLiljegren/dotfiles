@@ -73,3 +73,13 @@ updot() {
     echo "--- Nothing to commit in parent."
   fi
 }
+
+rdr() {
+    if [ -z "$1" ]; then
+        # Launch picker if no file provided
+        setsid rider >/dev/null 2>&1 &
+    else
+        # Launch specific solution
+        setsid rider "$1" >/dev/null 2>&1 &
+    fi
+}

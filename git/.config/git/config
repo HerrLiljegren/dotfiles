@@ -30,9 +30,10 @@
 
 [diff]
 	colorMoved = zebra
+	tool = bc
 
 [merge]
-	tool = nvim
+	tool = bc
 
 [mergetool "nvim"]
 	# Layout: Top row [Local | Base | Remote], Bottom row [Merged Result]
