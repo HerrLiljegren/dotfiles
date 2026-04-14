@@ -2,15 +2,23 @@
 export EDITOR='nvim'
 export LANG=en_US.UTF-8
 
-export PATH="$PATH:/usr/share/dotnet"
-export PATH="$PATH:$HOME/.dotnet/tools/"
-export DOTNET_ROOT="/usr/share/dotnet"
+export SSL_CERT_DIR="$HOME/.aspnet/dev-certs/trust:/etc/ssl/certs"
+export DOTNET_ROOT="$HOME/.dotnet"
+export DOTNET_ROOT_X64=DOTNET_ROOT
 
-export PATH="/home/jesper/bin:$PATH"
-export PATH="/home/jesper/go/bin:$PATH"
+path=(
+  "$HOME/bin"
+  "$HOME/go/bin"
+  "$DOTNET_ROOT"
+  "$DOTNET_ROOT/tools"
+  $path
+)
+
+export PATH
 
 # Opt-out of telemetry for cleaner terminal output
 export DOTNET_CLI_TELEMETRY_OPTOUT=1
+export POWERSHELL_TELEMETRY_OPTOUT=1
 
 # --- Antidote Bootstrap ---
 local antidote_dir=${ZDOTDIR:-~}/.antidote

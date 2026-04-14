@@ -14,3 +14,4 @@ alias dots='fd -t f -H . ~/dotfiles | fzf --preview "bat --color=always {}" | xa
 alias -g C='| wl-copy'
 alias lg='lazygit'
 alias oc='opencode'
+alias cat='bat'

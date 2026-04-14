@@ -1,4 +1,5 @@
-worktree-path = "../{{ branch | sanitize }}"
+worktree-path = "{{ repo_path }}/.worktrees/{{ branch | sanitize }}"
+
 skip-commit-generation-prompt = true
 
 [list]
@@ -26,11 +27,12 @@ summary = true
 # """
 
 # .config/wt.toml
-[pre-start]
+[post-switch]
 tmux = """
 S={{ branch | sanitize }}
 W={{ worktree_path }}
-tmux new-session -d -s "$S" -c "$W" -n dev
+if ! tmux has-session -t "$S" 2>/dev/null; then
+  tmux new-session -d -s "$S" -c "$W" -n dev
 
 # Create 4-pane layout: shell | backend / claude | frontend
 #tmux split-window -h -t "$S:dev" -c "$W"
@@ -43,6 +45,7 @@ tmux new-session -d -s "$S" -c "$W" -n dev
 #tmux send-keys -t "$S:dev.3" 'npm run frontend' Enter
 
 #tmux select-pane -t "$S:dev.0"
+fi
 echo "✓ Session '$S' — attach with: tmux attach -t $S"
 """
 
