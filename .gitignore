@@ -1,3 +1,5 @@
 .antidote/
 wallpapers/
 forge/*.log
+/docs
+/scripts/.local/bin

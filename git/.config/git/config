@@ -12,7 +12,7 @@
 	excludesfile = ~/.config/git/ignore
 
 [pull]
-	rebase = false
+	rebase = true
 
 [push]
 	default = simple
@@ -51,6 +51,7 @@
 [credential]
 	helper = /usr/bin/git-credential-manager
 	useHttpPath = true
+	credentialStore = cache
 [include]
 	path = ~/.config/delta/delta.gitconfig
 

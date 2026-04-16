@@ -2,16 +2,23 @@
 export EDITOR='nvim'
 export LANG=en_US.UTF-8
 
-#export PATH="$PATH:/usr/share/dotnet"
-#export PATH="$PATH:$HOME/.dotnet/tools/"
-#export DOTNET_ROOT="/usr/share/dotnet"
-export DOTNET_ROOT=$HOME/.dotnet
-export PATH=$PATH:$DOTNET_ROOT:$DOTNET_ROOT/tools
+export SSL_CERT_DIR="$HOME/.aspnet/dev-certs/trust:/etc/ssl/certs"
+export DOTNET_ROOT="$HOME/.dotnet"
+export DOTNET_ROOT_X64=DOTNET_ROOT
 
-export PATH="/home/jesper/go/bin:$PATH"
+path=(
+  "$HOME/bin"
+  "$HOME/go/bin"
+  "$DOTNET_ROOT"
+  "$DOTNET_ROOT/tools"
+  $path
+)
+
+export PATH
 
 # Opt-out of telemetry for cleaner terminal output
 export DOTNET_CLI_TELEMETRY_OPTOUT=1
+export POWERSHELL_TELEMETRY_OPTOUT=1
 
 # --- Antidote Bootstrap ---
 local antidote_dir=${ZDOTDIR:-~}/.antidote
@@ -49,6 +56,10 @@ eval "$(zoxide init --cmd cd zsh)"
 #eval "$(dotnet completions script zsh)"
 eval "$(starship init zsh)"
 
+# sesh
+fpath=(~/.config/zsh/completions $fpath)
+autoload -U compinit && compinit
+
 # Source files from a sub-directory to keep this file clean
 [[ -f ~/.config/zsh/aliases.zsh ]] && source ~/.config/zsh/aliases.zsh
 [[ -f ~/.config/zsh/functions.zsh ]] && source ~/.config/zsh/functions.zsh
@@ -63,3 +74,7 @@ case ":$PATH:" in
   *) export PATH="$PNPM_HOME:$PATH" ;;
 esac
 # pnpm end
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion

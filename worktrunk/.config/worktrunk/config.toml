@@ -4,10 +4,6 @@ worktree-path = "{{ repo_path }}/.worktrees/{{ branch | sanitize }}"
 
 #skip-commit-generation-prompt = true
 
-[commit.generation]
-# opencode — use a fast model variant
-command = "opencode run -m github-copilot/claude-haiku-4.5 --variant fast"
-
 [list]
 summary = true
 
@@ -32,8 +28,31 @@ summary = true
 # echo "✓ Session '$S' — attach with: tmux attach -t $S"
 # """
 
+# .config/wt.toml
+[post-switch]
+tmux = """
+S={{ branch | sanitize }}
+W={{ worktree_path }}
+if ! tmux has-session -t "$S" 2>/dev/null; then
+  tmux new-session -d -s "$S" -c "$W" -n dev
+
+# Create 4-pane layout: shell | backend / claude | frontend
+#tmux split-window -h -t "$S:dev" -c "$W"
+#tmux split-window -v -t "$S:dev.0" -c "$W"
+#tmux split-window -v -t "$S:dev.2" -c "$W"
+
+# Start services in each pane
+#tmux send-keys -t "$S:dev.1" 'npm run backend' Enter
+#tmux send-keys -t "$S:dev.2" 'claude' Enter
+#tmux send-keys -t "$S:dev.3" 'npm run frontend' Enter
+
+#tmux select-pane -t "$S:dev.0"
+fi
+echo "✓ Session '$S' — attach with: tmux attach -t $S"
+"""
+
 [pre-remove]
-# tmux = "tmux kill-session -t {{ branch | sanitize }} 2>/dev/null || true"
+tmux = "tmux kill-session -t {{ branch | sanitize }} 2>/dev/null || true"
 
 [projects]
 
@@ -170,38 +189,51 @@ summary = true
 # Default template:
 #
 # <!-- DEFAULT_TEMPLATE_START -->
-# [commit.generation]
-# template = """
-# Write a commit message for the staged changes below.
-#
-# <format>
-# - Subject line under 50 chars
-# - For material changes, add a blank line then a body paragraph explaining the change
-# - Output only the commit message, no quotes or code blocks
-# </format>
-#
-# <style>
-# - Imperative mood: "Add feature" not "Added feature"
-# - Match recent commit style (conventional commits if used)
-# - Describe the change, not the intent or benefit
-# </style>
-#
-# <diffstat>
-# {{ git_diff_stat }}
-# </diffstat>
-#
-# <diff>
-# {{ git_diff }}
-# </diff>
-#
-# <context>
-# Branch: {{ branch }}
-# {% if recent_commits %}<recent_commits>
-# {% for commit in recent_commits %}- {{ commit }}
-# {% endfor %}</recent_commits>{% endif %}
-# </context>
-#
-# """
+
+[commit.generation]
+# opencode — use a fast model variant
+command = "opencode run -m github-copilot/claude-haiku-4.5 --variant fast"
+
+template = """
+Write a commit message for the staged changes below.
+
+<format>
+- Subject line under 50 chars
+- Use Conventional Commits format: <type>(optional-scope): <subject>
+- For material changes, add a blank line then a bullet list
+- Each bullet must start with "- "
+- Keep each bullet on a single line under 72 chars
+- Body bullets should read like concise release-note style change summaries
+- Output only the commit message, no quotes or code blocks
+</format>
+
+<style>
+- Imperative mood: "add feature" not "added feature"
+- Use lowercase conventional commit types
+- Match recent commit style
+- Describe the change itself, not the intent or benefit
+- Do not list files changed
+- Avoid vague subjects like "update", "cleanup", or "fix stuff"
+- In the body, summarize the key changes as concise bullets
+</style>
+
+<diffstat>
+{{ git_diff_stat }}
+</diffstat>
+
+<diff>
+{{ git_diff }}
+</diff>
+
+<context>
+Branch: {{ branch }}
+{% if recent_commits %}<recent_commits>
+{% for commit in recent_commits %}- {{ commit }}
+{% endfor %}</recent_commits>{% endif %}
+</context>
+
+"""
+# <!-- DEFAULT_TEMPLATE_END -->
 # <!-- DEFAULT_TEMPLATE_END -->
 #
 # #### Squash template
@@ -214,33 +246,41 @@ summary = true
 # Default template:
 #
 # <!-- DEFAULT_SQUASH_TEMPLATE_START -->
-# [commit.generation]
-# squash-template = """
-# Combine these commits into a single commit message.
-#
-# <format>
-# - Subject line under 50 chars
-# - For material changes, add a blank line then a body paragraph explaining the change
-# - Output only the commit message, no quotes or code blocks
-# </format>
-#
-# <style>
-# - Imperative mood: "Add feature" not "Added feature"
-# - Match the style of commits being squashed (conventional commits if used)
-# - Describe the change, not the intent or benefit
-# </style>
-#
-# <commits branch="{{ branch }}" target="{{ target_branch }}">
-# {% for commit in commits %}- {{ commit }}
-# {% endfor %}</commits>
-#
-# <diffstat>
-# {{ git_diff_stat }}
-# </diffstat>
-#
-# <diff>
-# {{ git_diff }}
-# </diff>
-#
-# """
+#[commit.generation]
+squash-template = """
+Combine these commits into a single commit message.
+
+<format>
+- Subject line under 50 chars
+- Use Conventional Commits format: <type>(optional-scope): <subject>
+- For material changes, add a blank line then a bullet list
+- Each bullet must start with "- "
+- Keep each bullet on a single line under 72 chars
+- Body bullets should read like concise release-note style change summaries
+- Output only the commit message, no quotes or code blocks
+</format>
+
+<style>
+- Imperative mood: "add feature" not "added feature"
+- Use lowercase conventional commit types
+- Match the style of commits being squashed
+- Describe the resulting change itself, not the intent or benefit
+- Do not list files changed
+- Avoid vague subjects like "update", "cleanup", or "fix stuff"
+- Focus on the final combined change, not intermediate steps
+- In the body, summarize the key changes as concise bullets
+</style>
+
+<commits branch="{{ branch }}" target="{{ target_branch }}">
+{% for commit in commits %}- {{ commit }}
+{% endfor %}</commits>
+
+<diffstat>
+{{ git_diff_stat }}
+</diffstat>
+
+<diff>
+{{ git_diff }}
+</diff>
+"""
 # <!-- DEFAULT_SQUASH_TEMPLATE_END -->
