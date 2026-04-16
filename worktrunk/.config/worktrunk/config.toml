@@ -51,7 +51,7 @@ fi
 echo "✓ Session '$S' — attach with: tmux attach -t $S"
 """
 
-[pre-remove]
+[post-remove]
 tmux = "tmux kill-session -t {{ branch | sanitize }} 2>/dev/null || true"
 
 [projects]

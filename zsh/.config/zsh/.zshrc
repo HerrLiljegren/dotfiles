@@ -4,7 +4,7 @@ export LANG=en_US.UTF-8
 
 export SSL_CERT_DIR="$HOME/.aspnet/dev-certs/trust:/etc/ssl/certs"
 export DOTNET_ROOT="$HOME/.dotnet"
-export DOTNET_ROOT_X64=DOTNET_ROOT
+export DOTNET_ROOT_X64="$DOTNET_ROOT"
 
 path=(
   "$HOME/bin"
