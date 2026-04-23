@@ -1,6 +1,7 @@
 # Inside the repository
 # Creates: ~/code/myproject/.worktrees/feature-auth
-worktree-path = "{{ repo_path }}/.worktrees/{{ branch | sanitize }}"
+#worktree-path = "{{ repo_path }}/.worktrees/{{ branch | sanitize }}"
+worktree-path = "~/dev/worktrees/{{ repo }}/{{ branch | sanitize }}"
 
 #skip-commit-generation-prompt = true
 
@@ -31,28 +32,50 @@ summary = true
 # .config/wt.toml
 [post-switch]
 tmux = """
-S={{ branch | sanitize }}
+S={{ repo }}
+B={{ branch | sanitize }}
 W={{ worktree_path }}
+R={{ repo_path }}
+
+# Create one tmux session per repo if missing
 if ! tmux has-session -t "$S" 2>/dev/null; then
-  tmux new-session -d -s "$S" -c "$W" -n dev
-
-# Create 4-pane layout: shell | backend / claude | frontend
-#tmux split-window -h -t "$S:dev" -c "$W"
-#tmux split-window -v -t "$S:dev.0" -c "$W"
-#tmux split-window -v -t "$S:dev.2" -c "$W"
-
-# Start services in each pane
-#tmux send-keys -t "$S:dev.1" 'npm run backend' Enter
-#tmux send-keys -t "$S:dev.2" 'claude' Enter
-#tmux send-keys -t "$S:dev.3" 'npm run frontend' Enter
-
-#tmux select-pane -t "$S:dev.0"
+  tmux new-session -d -s "$S" -c "$R" -n "$B"
 fi
-echo "✓ Session '$S' — attach with: tmux attach -t $S"
+
+# Create one window per branch/worktree if missing
+if ! tmux list-windows -t "$S" -F '#W' 2>/dev/null | grep -Fxq "$B"; then
+  tmux new-window -t "$S" -n "$B" -c "$W"
+
+  # Optional starter layout for new worktree windows:
+  # tmux split-window -h -t "$S:$B" -c "$W"
+  # tmux split-window -v -t "$S:$B.0" -c "$W"
+  # tmux split-window -v -t "$S:$B.2" -c "$W"
+  #
+  # tmux send-keys -t "$S:$B.2" 'opencode' Enter
+  # tmux select-pane -t "$S:$B.0"
+fi
+
+# Always jump to the matching worktree window
+tmux select-window -t "$S:$B" 2>/dev/null || true
+
+echo "✓ Project session '$S' — window '$B'"
 """
 
 [post-remove]
-tmux = "tmux kill-session -t {{ branch | sanitize }} 2>/dev/null || true"
+tmux = """
+S={{ repo }}
+B={{ branch | sanitize }}
+
+# Remove the branch window from the project session
+tmux kill-window -t "$S:$B" 2>/dev/null || true
+
+# If the session has no windows left, remove it too
+if tmux has-session -t "$S" 2>/dev/null; then
+  if [ "$(tmux list-windows -t "$S" 2>/dev/null | wc -l)" -eq 0 ]; then
+    tmux kill-session -t "$S" 2>/dev/null || true
+  fi
+fi
+"""
 
 [projects]
 

@@ -2,7 +2,8 @@
   "$schema": "https://opencode.ai/config.json",
   "plugin": [
     "opencode-gemini-auth@latest",
-    "superpowers@git+https://github.com/obra/superpowers.git"
+    "superpowers@git+https://github.com/obra/superpowers.git",
+    "@slkiser/opencode-quota"
   ],
   "permission": {
     "bash": {
@@ -37,5 +38,14 @@
   },
   "instructions": [
     "/home/jesper/.config/opencode/rules/*.md"
-  ]
+  ],
+  "experimental": {
+    "quotaToast": {
+      "enableToast": true,
+      "showSessionTokens": true,
+      "enabledProviders": "auto",
+      "formatStyle": "classic",
+      "percentDisplayMode": "remaining"
+    }
+  }
 }

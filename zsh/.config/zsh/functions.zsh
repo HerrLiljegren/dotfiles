@@ -74,12 +74,15 @@ updot() {
   fi
 }
 
-rdr() {
-    if [ -z "$1" ]; then
-        # Launch picker if no file provided
-        setsid rider >/dev/null 2>&1 &
-    else
-        # Launch specific solution
-        setsid rider "$1" >/dev/null 2>&1 &
-    fi
+# Using sesh too pick a session directly in zsh
+function sesh-sessions() {
+  {
+    exec </dev/tty
+    exec <&1
+    local session
+    session=$(sesh list -t -c | fzf --height 40% --reverse --border-label ' sesh ' --border --prompt '⚡  ')
+    zle reset-prompt > /dev/null 2>&1 || true
+    [[ -z "$session" ]] && return
+    sesh connect $session
+  }
 }
