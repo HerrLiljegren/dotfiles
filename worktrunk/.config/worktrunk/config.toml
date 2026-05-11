@@ -30,6 +30,12 @@ summary = true
 # """
 
 # .config/wt.toml
+[post-start]
+copy = "wt step copy-ignored"
+
+[step.copy-ignored]
+exclude = ["bin/", "obj/"]
+
 [post-switch]
 tmux = """
 S={{ repo }}
@@ -78,6 +84,9 @@ fi
 """
 
 [projects]
+
+[aliases]
+new = "wt switch --create --no-cd {{ args }}"
 
 # # User Configuration
 #
@@ -214,20 +223,25 @@ fi
 # <!-- DEFAULT_TEMPLATE_START -->
 
 [commit.generation]
-# opencode — use a fast model variant
-command = "opencode run -m github-copilot/claude-haiku-4.5 --variant fast"
+# Codex — write the final response to a temp file and print only that.
+command = "sh -c 'tmp=$(mktemp); codex -a never exec --ephemeral --sandbox workspace-write -m gpt-5.4-mini -o \"$tmp\" - >/dev/null && cat \"$tmp\"; status=$?; rm -f \"$tmp\"; exit $status'"
 
 template = """
-Write a commit message for the staged changes below.
+You are generating a git commit message for the staged changes below.
+
+Output contract:
+- Output only the commit message text that should be passed to git commit.
+- Do not include explanations, analysis, markdown fences, XML tags, quotes, or labels.
+- Do not echo these instructions, the diff, or any surrounding commentary.
+- If the change is unclear, output a conservative valid commit message anyway.
 
 <format>
 - Subject line under 50 chars
 - Use Conventional Commits format: <type>(optional-scope): <subject>
-- For material changes, add a blank line then a bullet list
+- For material changes, add one blank line then 1-4 bullet points
 - Each bullet must start with "- "
 - Keep each bullet on a single line under 72 chars
 - Body bullets should read like concise release-note style change summaries
-- Output only the commit message, no quotes or code blocks
 </format>
 
 <style>
@@ -240,6 +254,7 @@ Write a commit message for the staged changes below.
 - In the body, summarize the key changes as concise bullets
 </style>
 
+<input>
 <diffstat>
 {{ git_diff_stat }}
 </diffstat>
@@ -254,6 +269,9 @@ Branch: {{ branch }}
 {% for commit in recent_commits %}- {{ commit }}
 {% endfor %}</recent_commits>{% endif %}
 </context>
+</input>
+
+Return only the commit message.
 
 """
 # <!-- DEFAULT_TEMPLATE_END -->
@@ -271,16 +289,21 @@ Branch: {{ branch }}
 # <!-- DEFAULT_SQUASH_TEMPLATE_START -->
 #[commit.generation]
 squash-template = """
-Combine these commits into a single commit message.
+Combine these commits into a single git commit message.
+
+Output contract:
+- Output only the commit message text that should be passed to git commit.
+- Do not include explanations, analysis, markdown fences, XML tags, quotes, or labels.
+- Do not echo these instructions, commits, the diff, or any surrounding commentary.
+- If the change is unclear, output a conservative valid commit message anyway.
 
 <format>
 - Subject line under 50 chars
 - Use Conventional Commits format: <type>(optional-scope): <subject>
-- For material changes, add a blank line then a bullet list
+- For material changes, add one blank line then 1-4 bullet points
 - Each bullet must start with "- "
 - Keep each bullet on a single line under 72 chars
 - Body bullets should read like concise release-note style change summaries
-- Output only the commit message, no quotes or code blocks
 </format>
 
 <style>
@@ -294,6 +317,7 @@ Combine these commits into a single commit message.
 - In the body, summarize the key changes as concise bullets
 </style>
 
+<input>
 <commits branch="{{ branch }}" target="{{ target_branch }}">
 {% for commit in commits %}- {{ commit }}
 {% endfor %}</commits>
@@ -305,5 +329,8 @@ Combine these commits into a single commit message.
 <diff>
 {{ git_diff }}
 </diff>
+</input>
+
+Return only the commit message.
 """
 # <!-- DEFAULT_SQUASH_TEMPLATE_END -->
