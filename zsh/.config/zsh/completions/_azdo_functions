@@ -1,0 +1,95 @@
+#compdef azdo-help azdo-defaults azdo-status azpr azpr-open azpr-checkout azruns azrun-open azpipe-run
+
+_azdo_pr_ids() {
+  local -a ids
+  ids=("${(@f)$(az repos pr list --status active --query '[].pullRequestId' -o tsv 2>/dev/null)}")
+  (( ${#ids} )) && compadd -a ids
+}
+
+_azdo_run_ids() {
+  local -a ids
+  ids=("${(@f)$(az pipelines runs list --top 20 --query '[].id' -o tsv 2>/dev/null)}")
+  (( ${#ids} )) && compadd -a ids
+}
+
+_azdo_pipeline_names() {
+  local -a pipelines
+  pipelines=("${(@f)$(az pipelines list --query '[].name' -o tsv 2>/dev/null)}")
+  (( ${#pipelines} )) && compadd -a pipelines
+}
+
+_azdo_branches() {
+  local -a branches
+  branches=(. main master develop)
+  if command -v git >/dev/null 2>&1; then
+    branches+=("${(@f)$(git for-each-ref --format='%(refname:short)' refs/heads refs/remotes 2>/dev/null | sed 's#^origin/##' | sort -u)}")
+  fi
+  compadd -a branches
+}
+
+_azdo_top_values() {
+  compadd 5 10 20 50 100
+}
+
+_azdo_functions() {
+  local curcontext="$curcontext" state line
+  typeset -A opt_args
+
+  case "$service" in
+    azdo-help|azdo-status)
+      _message "no arguments"
+      ;;
+    azdo-defaults)
+      _arguments \
+        '1:organization URL:_urls' \
+        '2:project name: '
+      ;;
+    azpr)
+      _arguments \
+        '1:filter:(active mine reviewing completed abandoned all)' \
+        '2:top:->top'
+      case "$state" in
+        top) _azdo_top_values ;;
+      esac
+      ;;
+    azpr-open)
+      _arguments '1:pull request:(current .):->pr'
+      case "$state" in
+        pr) _azdo_pr_ids ;;
+      esac
+      ;;
+    azpr-checkout)
+      _arguments '1:pull request:->pr'
+      case "$state" in
+        pr) _azdo_pr_ids ;;
+      esac
+      ;;
+    azruns)
+      _arguments \
+        '1:filter:(all running queued completed failed succeeded partial canceled)' \
+        '2:branch:->branch' \
+        '3:top:->top'
+      case "$state" in
+        branch) _azdo_branches ;;
+        top) _azdo_top_values ;;
+      esac
+      ;;
+    azrun-open)
+      _arguments '1:run id:->run'
+      case "$state" in
+        run) _azdo_run_ids ;;
+      esac
+      ;;
+    azpipe-run)
+      _arguments \
+        '1:pipeline:->pipeline' \
+        '2:branch:->branch'
+      case "$state" in
+        pipeline) _azdo_pipeline_names ;;
+        branch) _azdo_branches ;;
+      esac
+      ;;
+  esac
+}
+
+_azdo_functions "$@"

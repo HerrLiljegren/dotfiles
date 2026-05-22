@@ -73,6 +73,7 @@ autoload -U compinit && compinit
 # Source files from a sub-directory to keep this file clean
 [[ -f ~/.config/zsh/aliases.zsh ]] && source ~/.config/zsh/aliases.zsh
 [[ -f ~/.config/zsh/functions.zsh ]] && source ~/.config/zsh/functions.zsh
+[[ -f ~/.config/zsh/azdo-functions.zsh ]] && source ~/.config/zsh/azdo-functions.zsh
 
 
 if command -v wt >/dev/null 2>&1; then eval "$(command wt config shell init zsh)"; fi
