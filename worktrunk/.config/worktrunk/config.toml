@@ -280,22 +280,23 @@ Output contract:
 - If the change is unclear, output a conservative valid commit message anyway.
 
 <format>
-- Subject line under 50 chars
-- Use Conventional Commits format: <type>(optional-scope): <subject>
-- For material changes, add one blank line then 1-4 bullet points
-- Each bullet must start with "- "
-- Keep each bullet on a single line under 72 chars
-- Body bullets should read like concise release-note style change summaries
+- Start with a single-line Conventional Commit message.
+- Subject line under 50 chars.
+- Use format: <type>(optional-scope): <subject>
+- Only add a body if the change is clearly multi-part.
+- For multi-part changes, add one blank line then 1-4 bullets.
+- Each bullet must start with "- " and stay under 72 chars.
 </format>
 
 <style>
 - Imperative mood: "add feature" not "added feature"
 - Use lowercase conventional commit types
 - Match recent commit style
-- Describe the change itself, not the intent or benefit
-- Do not list files changed
+- Describe what changed; avoid intent-only phrasing.
+- Prefer one-line messages for small/atomic updates.
+- Do not list files changed.
 - Avoid vague subjects like "update", "cleanup", or "fix stuff"
-- In the body, summarize the key changes as concise bullets
+- If a body is used, summarize distinct changes as concise bullets.
 </style>
 
 <input>
@@ -342,12 +343,12 @@ Output contract:
 - If the change is unclear, output a conservative valid commit message anyway.
 
 <format>
-- Subject line under 50 chars
-- Use Conventional Commits format: <type>(optional-scope): <subject>
-- For material changes, add one blank line then 1-4 bullet points
-- Each bullet must start with "- "
-- Keep each bullet on a single line under 72 chars
-- Body bullets should read like concise release-note style change summaries
+- Start with a single-line Conventional Commit message.
+- Subject line under 50 chars.
+- Use format: <type>(optional-scope): <subject>
+- Only add a body if the combined change is clearly multi-part.
+- For multi-part changes, add one blank line then 1-4 bullets.
+- Each bullet must start with "- " and stay under 72 chars.
 </format>
 
 <style>
@@ -355,10 +356,11 @@ Output contract:
 - Use lowercase conventional commit types
 - Match the style of commits being squashed
 - Describe the resulting change itself, not the intent or benefit
+- Prefer one-line messages when the squash is a single logical change.
 - Do not list files changed
 - Avoid vague subjects like "update", "cleanup", or "fix stuff"
 - Focus on the final combined change, not intermediate steps
-- In the body, summarize the key changes as concise bullets
+- If a body is used, summarize the distinct changes as concise bullets
 </style>
 
 <input>
