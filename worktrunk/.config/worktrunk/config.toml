@@ -8,6 +8,9 @@ worktree-path = "~/dev/worktrees/{{ repo }}/{{ branch | sanitize }}"
 [list]
 summary = true
 
+[switch]
+cd = false
+
 # .config/wt.toml
 # [post-create]
 # tmux = """
@@ -37,51 +40,92 @@ copy = "wt step copy-ignored"
 exclude = ["bin/", "obj/"]
 
 [post-switch]
+# Per-worktree session workflow.
 tmux = """
-S={{ repo }}
-B={{ branch | sanitize }}
+S="{{ repo }} {{ branch | sanitize | replace('.', '_') }}"
 W={{ worktree_path }}
-R={{ repo_path }}
 
-# Create one tmux session per repo if missing
-if ! tmux has-session -t "$S" 2>/dev/null; then
-  tmux new-session -d -s "$S" -c "$R" -n "$B"
-fi
+# Create one tmux session per worktree if missing.
+if ! tmux has-session -t "=$S" 2>/dev/null; then
+  tmux new-session -d -s "$S" -c "$W" -n main
 
-# Create one window per branch/worktree if missing
-if ! tmux list-windows -t "$S" -F '#W' 2>/dev/null | grep -Fxq "$B"; then
-  tmux new-window -t "$S" -n "$B" -c "$W"
-
-  # Optional starter layout for new worktree windows:
-  # tmux split-window -h -t "$S:$B" -c "$W"
-  # tmux split-window -v -t "$S:$B.0" -c "$W"
-  # tmux split-window -v -t "$S:$B.2" -c "$W"
+  # Optional starter layout for new worktree sessions:
+  # tmux split-window -h -t "=$S:main" -c "$W"
+  # tmux split-window -v -t "=$S:main.0" -c "$W"
+  # tmux split-window -v -t "=$S:main.2" -c "$W"
   #
-  # tmux send-keys -t "$S:$B.2" 'opencode' Enter
-  # tmux select-pane -t "$S:$B.0"
+  # tmux send-keys -t "=$S:main.2" 'opencode' Enter
+  # tmux select-pane -t "=$S:main.0"
 fi
 
-# Always jump to the matching worktree window
-tmux select-window -t "$S:$B" 2>/dev/null || true
+if [ -n "$TMUX" ]; then
+  tmux switch-client -t "=$S"
+else
+  tmux attach-session -t "=$S"
+fi
 
-echo "✓ Project session '$S' — window '$B'"
+echo "✓ Worktree session '$S'"
 """
+
+# Previous per-project session workflow.
+# Kept here so it is easy to switch back to one tmux session per repo with
+# one window per branch/worktree.
+#
+# tmux = """
+# S={{ repo }}
+# B={{ branch | sanitize }}
+# W={{ worktree_path }}
+# R={{ repo_path }}
+#
+# # Create one tmux session per repo if missing
+# if ! tmux has-session -t "$S" 2>/dev/null; then
+#   tmux new-session -d -s "$S" -c "$R" -n "$B"
+# fi
+#
+# # Create one window per branch/worktree if missing
+# if ! tmux list-windows -t "$S" -F '#W' 2>/dev/null | grep -Fxq "$B"; then
+#   tmux new-window -t "$S" -n "$B" -c "$W"
+#
+#   # Optional starter layout for new worktree windows:
+#   # tmux split-window -h -t "$S:$B" -c "$W"
+#   # tmux split-window -v -t "$S:$B.0" -c "$W"
+#   # tmux split-window -v -t "$S:$B.2" -c "$W"
+#   #
+#   # tmux send-keys -t "$S:$B.2" 'opencode' Enter
+#   # tmux select-pane -t "$S:$B.0"
+# fi
+#
+# # Always jump to the matching worktree window
+# tmux select-window -t "$S:$B" 2>/dev/null || true
+#
+# echo "✓ Project session '$S' — window '$B'"
+# """
 
 [post-remove]
+# Per-worktree session cleanup.
 tmux = """
-S={{ repo }}
-B={{ branch | sanitize }}
+S="{{ repo }} {{ branch | sanitize | replace('.', '_') }}"
 
-# Remove the branch window from the project session
-tmux kill-window -t "$S:$B" 2>/dev/null || true
-
-# If the session has no windows left, remove it too
-if tmux has-session -t "$S" 2>/dev/null; then
-  if [ "$(tmux list-windows -t "$S" 2>/dev/null | wc -l)" -eq 0 ]; then
-    tmux kill-session -t "$S" 2>/dev/null || true
-  fi
-fi
+# Remove the worktree session when the worktree is removed.
+tmux kill-session -t "=$S" 2>/dev/null || true
 """
+
+# Previous per-project session cleanup.
+#
+# tmux = """
+# S={{ repo }}
+# B={{ branch | sanitize }}
+#
+# # Remove the branch window from the project session
+# tmux kill-window -t "$S:$B" 2>/dev/null || true
+#
+# # If the session has no windows left, remove it too
+# if tmux has-session -t "$S" 2>/dev/null; then
+#   if [ "$(tmux list-windows -t "$S" 2>/dev/null | wc -l)" -eq 0 ]; then
+#     tmux kill-session -t "$S" 2>/dev/null || true
+#   fi
+# fi
+# """
 
 [projects]
 
