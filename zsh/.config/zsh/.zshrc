@@ -55,6 +55,11 @@ bindkey -M emacs '\es' sesh-sessions
 bindkey -M vicmd '\es' sesh-sessions
 bindkey -M viins '\es' sesh-sessions
 
+zle     -N             ws-widget
+bindkey -M emacs '\ew' ws-widget
+bindkey -M vicmd '\ew' ws-widget
+bindkey -M viins '\ew' ws-widget
+
 # --- Plugin/Module Loading ---
 
 eval "$(zoxide init --cmd cd zsh)"
