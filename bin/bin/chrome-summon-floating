@@ -1,0 +1,191 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/niri"
+state_file="$state_dir/chrome-summon-window-id"
+geometry_file="$state_dir/chrome-summon-geometry.json"
+last_restored_geometry_file="$state_dir/chrome-summon-last-restored-geometry.json"
+log_file="${TMPDIR:-/tmp}/chrome-summon-floating.log"
+main_output="DP-1"
+
+mkdir -p "$state_dir"
+
+save_geometry() {
+  local window_id="$1"
+  local next_geometry workspace_id window_output
+
+  if ! niri msg -j windows \
+    | jq -e --argjson id "$window_id" '.[] | select(.id==$id and .app_id=="google-chrome" and .is_floating==true and .layout.tile_pos_in_workspace_view != null)' >/dev/null; then
+    return
+  fi
+
+  workspace_id="$(
+    niri msg -j windows \
+      | jq -r --argjson id "$window_id" '.[] | select(.id==$id) | .workspace_id'
+  )"
+  window_output="$(
+    niri msg -j workspaces \
+      | jq -r --argjson id "$workspace_id" '.[] | select(.id==$id) | .output'
+  )"
+
+  if [ "$window_output" != "$main_output" ]; then
+    return
+  fi
+
+  next_geometry="$(
+    niri msg -j windows \
+      | jq --argjson id "$window_id" '
+          .[]
+          | select(.id==$id and .is_floating==true and .layout.tile_pos_in_workspace_view != null)
+          | {
+              x: (.layout.tile_pos_in_workspace_view[0] | round),
+              y: (.layout.tile_pos_in_workspace_view[1] | round),
+              width: .layout.window_size[0],
+              height: .layout.window_size[1]
+            }
+        '
+  )"
+
+  if [ -n "$next_geometry" ]; then
+    if [ -s "$last_restored_geometry_file" ] \
+      && jq -e --argjson current "$next_geometry" --slurpfile restored "$last_restored_geometry_file" '$current == $restored[0]' >/dev/null; then
+      return
+    fi
+    printf '%s\n' "$next_geometry" >"$geometry_file"
+  fi
+}
+
+wait_for_floating_geometry() {
+  local window_id="$1"
+
+  for _ in $(seq 1 20); do
+    if niri msg -j windows \
+      | jq -e --argjson id "$window_id" '.[] | select(.id==$id and .is_floating==true and .layout.tile_pos_in_workspace_view != null)' >/dev/null; then
+      return 0
+    fi
+    sleep 0.05
+  done
+
+  return 1
+}
+
+wait_for_size() {
+  local window_id="$1"
+  local width="$2"
+  local height="$3"
+
+  for _ in $(seq 1 20); do
+    if niri msg -j windows \
+      | jq -e --argjson id "$window_id" --argjson width "$width" --argjson height "$height" '
+          .[]
+          | select(.id==$id and .layout.window_size[0]==$width and .layout.window_size[1]==$height)
+        ' >/dev/null; then
+      return 0
+    fi
+    sleep 0.05
+  done
+
+  return 1
+}
+
+restore_geometry() {
+  local window_id="$1"
+
+  if [ ! -s "$geometry_file" ]; then
+    niri msg action center-window --id "$window_id"
+    return
+  fi
+
+  local width height target_x target_y current_x current_y dx dy
+  width="$(jq -r '.width // empty' "$geometry_file")"
+  height="$(jq -r '.height // empty' "$geometry_file")"
+  target_x="$(jq -r '.x // empty' "$geometry_file")"
+  target_y="$(jq -r '.y // empty' "$geometry_file")"
+
+  if [ -n "$width" ]; then
+    niri msg action set-window-width --id "$window_id" "$width"
+  fi
+  if [ -n "$height" ]; then
+    niri msg action set-window-height --id "$window_id" "$height"
+  fi
+  if [ -n "$width" ] && [ -n "$height" ]; then
+    wait_for_size "$window_id" "$width" "$height" || true
+  fi
+
+  if [ -z "$target_x" ] || [ -z "$target_y" ]; then
+    niri msg action center-window --id "$window_id"
+    return
+  fi
+
+  current_x="$(
+    niri msg -j windows \
+      | jq -r --argjson id "$window_id" '.[] | select(.id==$id) | (.layout.tile_pos_in_workspace_view[0] | round)'
+  )"
+  current_y="$(
+    niri msg -j windows \
+      | jq -r --argjson id "$window_id" '.[] | select(.id==$id) | (.layout.tile_pos_in_workspace_view[1] | round)'
+  )"
+
+  if [ -n "$current_x" ] && [ -n "$current_y" ]; then
+    dx=$((target_x - current_x))
+    dy=$((target_y - current_y))
+    if [ "$dx" -ge 0 ]; then
+      dx="+$dx"
+    fi
+    if [ "$dy" -ge 0 ]; then
+      dy="+$dy"
+    fi
+    niri msg action move-floating-window --id "$window_id" --x "$dx" --y "$dy"
+    jq -n \
+      --argjson x "$target_x" \
+      --argjson y "$target_y" \
+      --argjson width "$width" \
+      --argjson height "$height" \
+      '{x: $x, y: $y, width: $width, height: $height}' >"$last_restored_geometry_file"
+  else
+    niri msg action center-window --id "$window_id"
+  fi
+}
+
+summon_window() {
+  local window_id="$1"
+
+  niri msg action move-window-to-monitor --id "$window_id" "$main_output"
+  niri msg action move-window-to-floating --id "$window_id"
+  wait_for_floating_geometry "$window_id" || true
+  restore_geometry "$window_id"
+  niri msg action focus-window --id "$window_id" || true
+  wait_for_floating_geometry "$window_id" || true
+  restore_geometry "$window_id"
+  printf '%s\n' "$window_id" >"$state_file"
+}
+
+if [ -s "$state_file" ]; then
+  saved_window_id="$(cat "$state_file")"
+  if niri msg -j windows \
+    | jq -e --argjson id "$saved_window_id" '.[] | select(.id==$id and .app_id=="google-chrome")' >/dev/null; then
+    save_geometry "$saved_window_id"
+    summon_window "$saved_window_id"
+    exit 0
+  fi
+fi
+
+before_ids="$(niri msg -j windows | jq '[.[] | select(.app_id=="google-chrome") | .id]')"
+
+nohup google-chrome-stable --new-window about:blank >"$log_file" 2>&1 &
+
+for _ in $(seq 1 50); do
+  if window_id="$(
+    niri msg -j windows \
+      | jq -r --argjson before "$before_ids" '.[] | select(.app_id=="google-chrome" and (.id as $id | ($before | index($id) | not))) | .id' \
+      | head -n 1
+  )"; then
+    if [ -n "$window_id" ]; then
+      summon_window "$window_id"
+      exit 0
+    fi
+  fi
+  sleep 0.1
+done
+
+exit 1

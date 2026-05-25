@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+class="chrome.one-off-floating.$(date +%s%N)"
+profile_dir="$(mktemp -d "${TMPDIR:-/tmp}/chrome-one-off.XXXXXXXX")"
+log_file="${TMPDIR:-/tmp}/chrome-one-off.log"
+
+nohup google-chrome-stable \
+  --class="$class" \
+  --user-data-dir="$profile_dir" \
+  --ozone-platform=wayland \
+  --disable-vulkan \
+  --disable-features=Vulkan,VulkanFromANGLE,DefaultANGLEVulkan \
+  --use-angle=gl \
+  --no-first-run \
+  --incognito \
+  --new-window \
+  about:blank >"$log_file" 2>&1 &
+
+for _ in $(seq 1 30); do
+  if window_id="$(
+    niri msg -j windows \
+      | jq -r --arg class "$class" '.[] | select(.app_id==$class and .is_floating==true) | .id' \
+      | head -n 1
+  )"; then
+    if [ -n "$window_id" ]; then
+      niri msg action focus-window --id "$window_id"
+      niri msg action center-window --id "$window_id"
+      exit 0
+    fi
+  fi
+  sleep 0.1
+done
+
+exit 1

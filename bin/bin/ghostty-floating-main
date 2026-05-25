@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Launch Ghostty in a floating window with tmux session "main", 200x50
+nohup ghostty --title="floating-terminal" --class=ghostty.floating --window-width=200 --window-height=50 -e tmux new-session -A -s main >/tmp/ghostty-floating-main.log 2>&1 &
+
+# Wait for the window to appear and get the app-id of the new floating terminal
+for _ in $(seq 1 30); do
+  if window_id="$(niri msg -j windows | jq -r '.[] | select(.app_id=="ghostty.floating" and .is_floating==true) | .id' | head -n 1)"; then
+  if [ -n "$window_id" ]; then
+      niri msg action focus-window --id "$window_id"
+      niri msg action center-window --id "$window_id"
+      exit 0
+    fi
+  fi
+  sleep 0.1
+done
+
+exit 1
