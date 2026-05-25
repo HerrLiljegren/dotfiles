@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+dev_root="${1:-$HOME/dev}"
+app_dir="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
+prefix="ws-code-workspace"
+
+if [[ ! -d "$dev_root" ]]; then
+  printf 'No dev folder found: %s\n' "$dev_root" >&2
+  exit 1
+fi
+
+mkdir -p "$app_dir"
+find "$app_dir" -maxdepth 1 -type f -name "${prefix}-*.desktop" -delete
+
+slugify() {
+  local value="$1"
+  value="${value,,}"
+  value="${value//[^a-z0-9._-]/-}"
+  value="${value//--/-}"
+  value="${value#-}"
+  value="${value%-}"
+  printf '%s' "${value:-workspace}"
+}
+
+desktop_escape() {
+  local value="$1"
+  value="${value//\\/\\\\}"
+  value="${value//\"/\\\"}"
+  value="${value//\$/\\\$}"
+  value="${value//\`/\\\`}"
+  value="${value//%/%%}"
+  printf '%s' "$value"
+}
+
+workspace_meta() {
+  local workspace="$1"
+  local workspace_dir rel project worktree
+
+  workspace_dir="$(dirname "$workspace")"
+  rel="${workspace#$dev_root/}"
+
+  if [[ "$rel" == worktrees/*/*/* ]]; then
+    project="${rel#worktrees/}"
+    project="${project%%/*}"
+    worktree="${rel#worktrees/$project/}"
+    worktree="${worktree%%/*}"
+  elif [[ "$rel" == */.worktrees/*/* ]]; then
+    project="${rel%%/.worktrees/*}"
+    project="$(basename "$project")"
+    worktree="${rel#*/.worktrees/}"
+    worktree="${worktree%%/*}"
+  else
+    project="$(basename "$workspace_dir")"
+    worktree="main"
+  fi
+
+  printf '%s\t%s\n' "$project" "$worktree"
+}
+
+count=0
+while IFS= read -r -d '' workspace; do
+  IFS=$'\t' read -r project worktree < <(workspace_meta "$workspace")
+
+  hash="$(printf '%s' "$workspace" | sha256sum | cut -c1-10)"
+  slug="$(slugify "$project-$worktree")"
+  desktop_file="$app_dir/${prefix}-${slug}-${hash}.desktop"
+  exec_path="$(desktop_escape "$workspace")"
+
+  cat > "$desktop_file" <<EOF
+[Desktop Entry]
+Type=Application
+Name=ws $project $worktree
+GenericName=VS Code Workspace
+Comment=Open $project $worktree in VS Code
+Exec=code -n "$exec_path"
+Icon=visual-studio-code
+Terminal=false
+StartupNotify=false
+StartupWMClass=code
+Categories=Development;
+Keywords=ws;workspace;code;$project;$worktree;
+EOF
+
+  count=$((count + 1))
+done < <(find "$dev_root" -type f -name '*.code-workspace' -print0 2>/dev/null | sort -z)
+
+if command -v update-desktop-database >/dev/null 2>&1; then
+  update-desktop-database "$app_dir" >/dev/null 2>&1 || true
+fi
+
+printf 'Synced %d VS Code workspace launcher entries.\n' "$count"

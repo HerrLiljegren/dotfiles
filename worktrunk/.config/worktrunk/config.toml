@@ -35,6 +35,7 @@ cd = false
 # .config/wt.toml
 [post-start]
 copy = "wt step copy-ignored"
+workspaces = "ws-sync"
 
 [step.copy-ignored]
 exclude = ["bin/", "obj/"]
@@ -43,19 +44,15 @@ exclude = ["bin/", "obj/"]
 # Per-worktree session workflow.
 tmux = """
 S="{{ repo }} {{ branch | sanitize | replace('.', '_') }}"
-W={{ worktree_path }}
+W="{{ worktree_path }}"
 
 # Create one tmux session per worktree if missing.
 if ! tmux has-session -t "=$S" 2>/dev/null; then
-  tmux new-session -d -s "$S" -c "$W" -n main
+  codex_pane="$(tmux new-session -d -P -F '#{pane_id}' -s "$S" -c "$W" -n main)"
+  shell_pane="$(tmux split-window -v -P -F '#{pane_id}' -t "$codex_pane" -c "$W")"
 
-  # Optional starter layout for new worktree sessions:
-  # tmux split-window -h -t "=$S:main" -c "$W"
-  # tmux split-window -v -t "=$S:main.0" -c "$W"
-  # tmux split-window -v -t "=$S:main.2" -c "$W"
-  #
-  # tmux send-keys -t "=$S:main.2" 'opencode' Enter
-  # tmux select-pane -t "=$S:main.0"
+  tmux send-keys -t "$codex_pane" 'codex -m gpt-5.5 -c model_reasoning_effort=\"medium\"' Enter
+  tmux select-pane -t "$shell_pane"
 fi
 
 if [ -n "$TMUX" ]; then
@@ -109,6 +106,7 @@ S="{{ repo }} {{ branch | sanitize | replace('.', '_') }}"
 # Remove the worktree session when the worktree is removed.
 tmux kill-session -t "=$S" 2>/dev/null || true
 """
+workspaces = "ws-sync"
 
 # Previous per-project session cleanup.
 #
@@ -268,7 +266,7 @@ new = "wt switch --create --no-cd {{ args }}"
 
 [commit.generation]
 # Codex — write the final response to a temp file and print only that.
-command = "sh -c 'tmp=$(mktemp); codex -a never exec --ephemeral --sandbox workspace-write -m gpt-5.4-mini -o \"$tmp\" - >/dev/null && cat \"$tmp\"; status=$?; rm -f \"$tmp\"; exit $status'"
+command = "sh -c 'tmp=$(mktemp); codex -a never exec --ephemeral --sandbox read-only -m gpt-5.3-codex-spark -o \"$tmp\" - >/dev/null && cat \"$tmp\"; status=$?; rm -f \"$tmp\"; exit $status'"
 
 template = """
 You are generating a git commit message for the staged changes below.
@@ -286,6 +284,13 @@ Output contract:
 - Only add a body if the change is clearly multi-part.
 - For multi-part changes, add one blank line then 1-4 bullets.
 - Each bullet must start with "- " and stay under 72 chars.
+- Add a final footer only when Azure DevOps Boards work item IDs are clearly known.
+- Prefer IDs from the branch name, explicit guidance, or existing commit footer patterns.
+- Do not infer work item IDs from unrelated numbers in the diff.
+- Use `Refs #5034` for one work item.
+- Use `Refs #5034, #6120` for multiple clearly relevant work items.
+- Do not use Markdown links; Azure DevOps will auto-link `#<digits>`.
+- Put the footer after a blank line; preserve any body bullets above it.
 </format>
 
 <style>
@@ -297,6 +302,8 @@ Output contract:
 - Do not list files changed.
 - Avoid vague subjects like "update", "cleanup", or "fix stuff"
 - If a body is used, summarize distinct changes as concise bullets.
+- Preserve clearly known Azure Boards work item IDs as a `Refs` footer,
+  not as the Conventional Commit scope.
 </style>
 
 <input>
@@ -349,6 +356,13 @@ Output contract:
 - Only add a body if the combined change is clearly multi-part.
 - For multi-part changes, add one blank line then 1-4 bullets.
 - Each bullet must start with "- " and stay under 72 chars.
+- Add a final footer only when Azure DevOps Boards work item IDs are clearly known.
+- Prefer IDs from the branch name, explicit guidance, or existing commit footer patterns.
+- Do not infer work item IDs from unrelated numbers in the diff.
+- Use `Refs #5034` for one work item.
+- Use `Refs #5034, #6120` for multiple clearly relevant work items.
+- Do not use Markdown links; Azure DevOps will auto-link `#<digits>`.
+- Put the footer after a blank line; preserve any body bullets above it.
 </format>
 
 <style>
@@ -361,6 +375,8 @@ Output contract:
 - Avoid vague subjects like "update", "cleanup", or "fix stuff"
 - Focus on the final combined change, not intermediate steps
 - If a body is used, summarize the distinct changes as concise bullets
+- Preserve clearly known Azure Boards work item IDs as a `Refs` footer,
+  not as the Conventional Commit scope.
 </style>
 
 <input>

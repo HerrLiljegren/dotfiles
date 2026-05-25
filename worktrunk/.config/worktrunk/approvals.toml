@@ -1,0 +1,75 @@
+[projects."ssh.dev.azure.com/v3/tengella/mina-stadtjanster/mobile-app"]
+approved-commands = [
+    '''
+{% if args | length < 1 %}
+echo "usage: wt issue ISSUE_ID [--base=BASE_BRANCH]" >&2
+exit 2
+{% else %}
+ISSUE={{ args[0] }}
+
+wt switch --create "issue/$ISSUE" {% if base is defined and base %}--base {{ base }}{% endif %} -x codex -- \
+  "$(sed "s/ISSUE_ID/$ISSUE/g" docs/agents/default-issue-prompt.md)"
+{% endif %}
+''',
+    '''
+{% if args | length < 1 %}
+echo "usage: wt issue ISSUE_ID [--base=BASE_BRANCH]" >&2
+exit 2
+{% else %}
+ISSUE={{ args[0] }}
+
+{% if codex is defined and codex == "true" %}
+CODEX_LAUNCHER='sh scripts/agents/start-codex-in-worktree-tmux.sh {% raw %}{{ repo }}{% endraw %}'
+CODEX_LAUNCHER="$CODEX_LAUNCHER "'{% raw %}{{ branch | sanitize | replace(".", "_") }}{% endraw %}'
+CODEX_LAUNCHER="$CODEX_LAUNCHER "'{% raw %}{{ worktree_path }}{% endraw %}'
+
+wt switch --create "issue/$ISSUE" {% if base is defined and base %}--base {{ base }}{% endif %} \
+  -x "$CODEX_LAUNCHER" -- \
+  "$(sed "s/ISSUE_ID/$ISSUE/g" docs/agents/default-issue-prompt.md)"
+{% else %}
+wt switch --create "issue/$ISSUE" {% if base is defined and base %}--base {{ base }}{% endif %}
+{% endif %}
+{% endif %}
+''',
+    '''
+{% if args | length < 1 %}
+echo "usage: wt issue ISSUE_ID [--base=BASE_BRANCH]" >&2
+exit 2
+{% else %}
+ISSUE={{ args[0] }}
+
+{% if codex is defined and codex == "true" %}
+CODEX_SCRIPT=$(git rev-parse --show-toplevel)/scripts/agents/start-codex-in-worktree-tmux.sh
+CODEX_LAUNCHER="sh '$CODEX_SCRIPT' {% raw %}{{ repo }}{% endraw %}"
+CODEX_LAUNCHER="$CODEX_LAUNCHER "'{% raw %}{{ branch | sanitize | replace(".", "_") }}{% endraw %}'
+CODEX_LAUNCHER="$CODEX_LAUNCHER "'{% raw %}{{ worktree_path }}{% endraw %}'
+
+wt switch --create "issue/$ISSUE" {% if base is defined and base %}--base {{ base }}{% endif %} \
+  -x "$CODEX_LAUNCHER" -- \
+  "$(sed "s/ISSUE_ID/$ISSUE/g" docs/agents/default-issue-prompt.md)"
+{% else %}
+wt switch --create "issue/$ISSUE" {% if base is defined and base %}--base {{ base }}{% endif %}
+{% endif %}
+{% endif %}
+''',
+    """
+{% if args | length < 1 %}
+echo "usage: wt issue ISSUE_ID [--base=BASE_BRANCH]" >&2
+exit 2
+{% else %}
+ISSUE={{ args[0] }}
+
+wt switch --create "issue/$ISSUE" {% if base is defined and base %}--base {{ base }}{% endif %}
+{% endif %}
+""",
+    """
+{% if args | length < 1 %}
+echo "usage: wt afk ISSUE_ID" >&2
+exit 2
+{% else %}
+ISSUE={{ args[0] }}
+
+codex "$(sed "s/ISSUE_ID/$ISSUE/g" docs/agents/default-issue-prompt.md)"
+{% endif %}
+""",
+]
