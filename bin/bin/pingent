@@ -1,0 +1,284 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CONFIG_ROOT="${PINGENT_CONFIG_DIR:-$HOME/.config/pingent}"
+CONFIG_FILE="$CONFIG_ROOT/config.json"
+STATE_FILE="$CONFIG_ROOT/state.json"
+DEBUG_LOG_FILE="${PINGENT_DEBUG_LOG:-$CONFIG_ROOT/debug.log}"
+
+mkdir -p "$CONFIG_ROOT"
+
+debug_log() {
+  if [ "${PINGENT_DEBUG:-0}" = "1" ]; then
+    printf '%s %s\n' "$(date +%Y-%m-%dT%H:%M:%S)" "$*" >> "$DEBUG_LOG_FILE"
+  fi
+}
+
+ensure_state_file() {
+  if [ ! -f "$STATE_FILE" ]; then
+    printf '%s\n' '{"dedupe":{}}' > "$STATE_FILE"
+  fi
+}
+
+config_value() {
+  local query="$1"
+  local fallback="$2"
+  if [ -f "$CONFIG_FILE" ] && jq empty "$CONFIG_FILE" >/dev/null 2>&1; then
+    local value
+    value="$(jq -r "$query // empty" "$CONFIG_FILE")"
+    if [ -n "$value" ] && [ "$value" != "null" ]; then
+      printf '%s' "$value"
+      return
+    fi
+  fi
+  printf '%s' "$fallback"
+}
+
+event_enabled() {
+  local event_name="$1"
+
+  if [ -f "$CONFIG_FILE" ] && jq empty "$CONFIG_FILE" >/dev/null 2>&1; then
+    if jq -e '.enabledEvents? != null' "$CONFIG_FILE" >/dev/null; then
+      jq -e --arg event "$event_name" '
+        if (.enabledEvents | type) == "array" then
+          (.enabledEvents | index($event) != null)
+        elif (.enabledEvents | type) == "string" then
+          (.enabledEvents | split(",") | map(gsub("^\\s+|\\s+$"; "")) | index($event) != null)
+        else
+          false
+        end
+      ' "$CONFIG_FILE" >/dev/null
+      return
+    fi
+  fi
+
+  case "$event_name" in
+    attention|complete) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+default_template() {
+  local event_name="$1"
+  case "$event_name" in
+    attention) printf '{source} needs your input in {projectName}' ;;
+    complete) printf '{source} finished in {projectName}' ;;
+    error) printf '{source} hit an error in {projectName}' ;;
+    *) printf '' ;;
+  esac
+}
+
+body_from_template() {
+  local template="$1"
+  local source_name="$2"
+  local project_name="$3"
+  local session_title="$4"
+  local tool_name="$5"
+  local timestamp="$6"
+  template="${template//\{source\}/$source_name}"
+  template="${template//\{projectName\}/$project_name}"
+  template="${template//\{sessionTitle\}/$session_title}"
+  template="${template//\{tool\}/$tool_name}"
+  template="${template//\{timestamp\}/$timestamp}"
+  printf '%s' "$template"
+}
+
+project_from_cwd() {
+  local cwd="$1"
+  if [ -n "$cwd" ] && [ "$cwd" != "null" ]; then
+    basename "$cwd"
+  else
+    printf 'workspace'
+  fi
+}
+
+dedupe_hit() {
+  local dedupe_seconds="$1"
+  local dedupe_key="$2"
+  [ -z "$dedupe_key" ] && return 1
+
+  ensure_state_file
+
+  local now previous tmp
+  now="$(date +%s)"
+  previous="$(jq -r --arg key "$dedupe_key" '.dedupe[$key] // 0' "$STATE_FILE" 2>/dev/null || printf '0')"
+  if [ "$previous" -gt 0 ] && [ $((now - previous)) -lt "$dedupe_seconds" ]; then
+    return 0
+  fi
+
+  tmp="$(mktemp)"
+  jq --arg key "$dedupe_key" --argjson now "$now" '.dedupe[$key] = $now' "$STATE_FILE" > "$tmp"
+  mv "$tmp" "$STATE_FILE"
+  return 1
+}
+
+send_notification() {
+  local source_name="$1"
+  local normalized_event="$2"
+  local project_name="$3"
+  local session_title="$4"
+  local tool_name="$5"
+  local message_override="$6"
+  local urgency timestamp title template body replace_args
+
+  case "$normalized_event" in
+    attention) urgency="critical" ;;
+    complete) urgency="normal" ;;
+    error) urgency="critical" ;;
+    *) exit 0 ;;
+  esac
+
+  timestamp="$(date +%H:%M:%S)"
+  title="Pingent"
+  if [ -n "$source_name" ] && [ "$source_name" != "unknown" ]; then
+    title="$title: $source_name"
+  fi
+
+  if [ -n "$message_override" ]; then
+    body="$message_override"
+  else
+    template="$(config_value ".messages.$normalized_event" "$(default_template "$normalized_event")")"
+    body="$(body_from_template "$template" "$source_name" "$project_name" "$session_title" "$tool_name" "$timestamp")"
+  fi
+
+  if ! command -v notify-send >/dev/null 2>&1; then
+    debug_log "notify-send missing source=$source_name event=$normalized_event"
+    printf 'pingent: notify-send not found\n' >&2
+    exit 0
+  fi
+
+  replace_args=()
+  if [ "$(config_value '.groupNotifications' 'false')" = "true" ]; then
+    replace_args=(-r 271828)
+  fi
+
+  debug_log "notify-send source=$source_name event=$normalized_event title=$title body=$body"
+  notify-send -u "$urgency" "${replace_args[@]}" "$title" "$body"
+}
+
+normalize_from_json() {
+  local payload="$1"
+  local hook_event event_name source_name project_name session_title tool_name message duration key normalized_event
+  local delim
+  delim=$'\037'
+
+  hook_event="$(printf '%s' "$payload" | jq -r '.hook_event_name // empty')"
+  event_name="$(printf '%s' "$payload" | jq -r '.event // empty')"
+  source_name="$(printf '%s' "$payload" | jq -r '.source // empty')"
+  project_name="$(printf '%s' "$payload" | jq -r '.projectName // empty')"
+  if [ -z "$project_name" ]; then
+    project_name="$(project_from_cwd "$(printf '%s' "$payload" | jq -r '.cwd // empty')")"
+  fi
+  session_title="$(printf '%s' "$payload" | jq -r '.sessionTitle // .last_assistant_message // empty')"
+  tool_name="$(printf '%s' "$payload" | jq -r '.tool // .tool_name // .toolName // empty')"
+  message="$(printf '%s' "$payload" | jq -r '.message // empty')"
+  duration="$(printf '%s' "$payload" | jq -r '.durationSeconds // empty')"
+  key="$(printf '%s' "$payload" | jq -r '.key // empty')"
+
+  normalized_event=""
+
+  case "$hook_event" in
+    PermissionRequest)
+      source_name="codex"
+      normalized_event="attention"
+      ;;
+    Stop)
+      source_name="codex"
+      normalized_event="complete"
+      ;;
+  esac
+
+  if [ -z "$normalized_event" ]; then
+    case "$event_name" in
+      permission.asked|question|attention)
+        normalized_event="attention"
+        ;;
+      session.idle|sessionEnd|complete)
+        normalized_event="complete"
+        ;;
+      session.error|errorOccurred|error)
+        normalized_event="error"
+        ;;
+      *)
+        normalized_event=""
+        ;;
+    esac
+  fi
+
+  if [ -z "$source_name" ]; then
+    case "$event_name" in
+      permission.asked|question|session.idle|session.error)
+        source_name="opencode"
+        ;;
+      sessionEnd|errorOccurred)
+        source_name="copilot"
+        ;;
+      attention|complete|error)
+        source_name="unknown"
+        ;;
+    esac
+  fi
+
+  printf '%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s\n' \
+    "$source_name" "$delim" "$normalized_event" "$delim" "$project_name" "$delim" "$session_title" "$delim" \
+    "$tool_name" "$delim" "$message" "$delim" "$duration" "$delim" "$key"
+}
+
+handle_json() {
+  local payload="$1"
+  local source_name normalized_event project_name session_title tool_name message duration key min_complete dedupe_seconds dedupe_key
+  IFS=$'\037' read -r source_name normalized_event project_name session_title tool_name message duration key <<EOF
+$(normalize_from_json "$payload")
+EOF
+
+  [ -z "$normalized_event" ] && exit 0
+  [ -z "$source_name" ] && source_name="unknown"
+  [ -z "$project_name" ] && project_name="workspace"
+  event_enabled "$normalized_event" || exit 0
+
+  debug_log "json source=$source_name event=$normalized_event project=$project_name tool=$tool_name duration=${duration:-} key=${key:-}"
+
+  min_complete="$(config_value '.minCompleteSeconds' '0')"
+  dedupe_seconds="$(config_value '.dedupeSeconds' '20')"
+
+  if [ "$normalized_event" = "complete" ] && [ -n "$duration" ] && [ "$duration" != "null" ]; then
+    if [ "$duration" -lt "$min_complete" ]; then
+      exit 0
+    fi
+  fi
+
+  dedupe_key="$key"
+  if [ -z "$dedupe_key" ] && [ "$normalized_event" = "attention" ]; then
+    dedupe_key="$source_name:$project_name:$tool_name:$normalized_event"
+  fi
+  if [ "$normalized_event" = "attention" ] && dedupe_hit "$dedupe_seconds" "$dedupe_key"; then
+    exit 0
+  fi
+
+  send_notification "$source_name" "$normalized_event" "$project_name" "$session_title" "$tool_name" "$message"
+}
+
+handle_args() {
+  local source_name="${1:-unknown}"
+  local normalized_event="${2:-}"
+  local message="${3:-}"
+  [ -z "$normalized_event" ] && exit 0
+  event_enabled "$normalized_event" || exit 0
+  debug_log "args source=$source_name event=$normalized_event message=$message"
+  send_notification "$source_name" "$normalized_event" "workspace" "" "" "$message"
+}
+
+main() {
+  local json_input=""
+  if [ ! -t 0 ]; then
+    json_input="$(cat)"
+  fi
+
+  if [ -n "$json_input" ]; then
+    handle_json "$json_input"
+  else
+    handle_args "$@"
+  fi
+}
+
+main "$@"
