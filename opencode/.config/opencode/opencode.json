@@ -24,7 +24,15 @@
   "mcp": {
     "ado-remote-mcp": {
       "url": "https://mcp.dev.azure.com/tengella",
-      "type": "remote",
+      "type": "http",
+      "enabled": true
+    },
+    "ado": {
+      "type": "local",
+      "command": ["npx", "-y", "@azure-devops/mcp", "tengella", "--authentication", "pat"],
+      "environment": {
+        "PERSONAL_ACCESS_TOKEN": "YW55dGhpbmc6OWhSZFVGaUsyd1NTeENaR004U0pCdktIYVdVUHNjUkRrdXZYMXFxVndDYVpqeGlRbGtOOUpRUUo5OUNFQUNBQUFBQTlhd2s4QUFBU0FaRE8xWEhG"
+      },
       "enabled": true
     },
     "context7": {
@@ -36,9 +44,7 @@
       }
     }
   },
-  "instructions": [
-    "/home/jesper/.config/opencode/rules/*.md"
-  ],
+  "instructions": ["/home/jesper/.config/opencode/rules/*.md"],
   "experimental": {
     "quotaToast": {
       "enableToast": true,
