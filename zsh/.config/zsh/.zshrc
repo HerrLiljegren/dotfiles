@@ -8,6 +8,7 @@ export DOTNET_ROOT_X64="$DOTNET_ROOT"
 
 path=(
   "$HOME/bin"
+  "$HOME/dotfiles/agents/bin"
   "$HOME/go/bin"
   "$DOTNET_ROOT"
   "$DOTNET_ROOT/tools"

@@ -1,4 +1,6 @@
 .antidote/
+__pycache__/
+*.py[cod]
 wallpapers/
 forge/*.log
 /docs
