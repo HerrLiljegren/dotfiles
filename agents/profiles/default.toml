@@ -1,0 +1,36 @@
+# Enabled means a symlink exists in ~/.agents/skills.
+
+[packages.anthropics-skills]
+frontend-design = true
+
+[packages.vercel-labs-skills]
+find-skills = false
+
+[packages.jesper]
+aspire = true
+aspireify = false
+capture-to-vault = true
+dotnet-inspect = true
+
+[packages.mattpocock-skills]
+caveman = false
+diagnose = true
+grill-me = true
+grill-with-docs = true
+handoff = true
+improve-codebase-architecture = true
+prototype = true
+setup-matt-pocock-skills = false
+tdd = true
+to-issues = true
+to-prd = true
+triage = true
+write-a-skill = false
+zoom-out = true
+
+[packages.azdo-work-item-pipeline]
+commit-message-writer = true
+issue-implementer = true
+issue-landing = true
+setup-work-item-pipeline = false
+work-item-pipeline = true

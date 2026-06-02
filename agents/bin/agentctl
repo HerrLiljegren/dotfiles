@@ -1,0 +1,414 @@
+#!/usr/bin/env zsh
+set -euo pipefail
+
+base="${AGENTS_DOTFILES_HOME:-$HOME/dotfiles/agents}"
+script_dir="${0:A:h}"
+script_path="${0:A}"
+enabled_dir="${AGENTS_SKILLS_HOME:-$HOME/.agents/skills}"
+color_enabled=0
+case "${AGENTCTL_COLOR:-auto}" in
+  always) color_enabled=1 ;;
+  never) color_enabled=0 ;;
+  auto)
+    if [[ -t 1 && -z "${NO_COLOR:-}" && "${TERM:-}" != "dumb" ]]; then
+      color_enabled=1
+    fi
+    ;;
+  *) print -u2 "invalid AGENTCTL_COLOR=${AGENTCTL_COLOR}; expected auto, always, or never"; exit 2 ;;
+esac
+
+pretty_enabled() {
+  [[ "$color_enabled" == 1 ]]
+}
+
+style() {
+  local code="$1"
+  shift
+  if pretty_enabled; then
+    printf '\033[%sm%s\033[0m' "$code" "$*"
+  else
+    printf '%s' "$*"
+  fi
+}
+
+styled_field() {
+  local code="$1"
+  local width="$2"
+  local text="$3"
+  local padded
+  printf -v padded "%-${width}s" "$text"
+  style "$code" "$padded"
+}
+
+state_display() {
+  case "$1" in
+    on) style 32 "on" ;;
+    off) style 2 "off" ;;
+    shadowed) style 33 "shadowed" ;;
+    blocked) style 31 "blocked" ;;
+    *) print -r -- "$1" ;;
+  esac
+}
+
+group_display() {
+  local group="$1"
+  local deprecated="$2"
+  if [[ "$deprecated" == "true" ]]; then
+    style 33 "${group}!"
+  elif [[ "$group" == "-" ]]; then
+    style 2 "$group"
+  else
+    style 35 "$group"
+  fi
+}
+
+state_field() {
+  local state="$1"
+  local width="${2:-8}"
+  case "$state" in
+    on) styled_field 32 "$width" "$state" ;;
+    off) styled_field 2 "$width" "$state" ;;
+    shadowed) styled_field 33 "$width" "$state" ;;
+    blocked) styled_field 31 "$width" "$state" ;;
+    *) styled_field 0 "$width" "$state" ;;
+  esac
+}
+
+package_field() {
+  styled_field 36 "${2:-24}" "$1"
+}
+
+group_field() {
+  local group="$1"
+  local deprecated="$2"
+  local width="${3:-18}"
+  if [[ "$deprecated" == "true" ]]; then
+    styled_field 33 "$width" "${group}!"
+  elif [[ "$group" == "-" ]]; then
+    styled_field 2 "$width" "$group"
+  else
+    styled_field 35 "$width" "$group"
+  fi
+}
+
+usage() {
+  cat <<'EOF'
+usage:
+  agentctl list
+  agentctl manage-interactive
+  agentctl toggle-interactive
+  agentctl enable-interactive
+  agentctl enable <skill|package/skill>
+  agentctl disable <skill>
+  agentctl apply [profile]
+  agentctl import-github <https://github.com/owner/repo> [--apply]
+  agentctl update <package|--all> [--apply]
+
+Enabled means a symlink exists in ~/.agents/skills.
+Profiles live in ~/dotfiles/agents/profiles.
+EOF
+}
+
+skill_path() {
+  local spec="$1"
+
+  if [[ "$spec" == */* ]]; then
+    local package="${spec%%/*}"
+    local skill="${spec#*/}"
+    local path="$base/packages/$package/skills/$skill"
+    [[ -d "$path" ]] || return 1
+    print -r -- "$path"
+    return 0
+  fi
+
+  local -a matches
+  matches=()
+  local path
+  for path in "$base"/packages/*/skills/"$spec"; do
+    [[ -d "$path" ]] && matches+=("$path")
+  done
+
+  if (( ${#matches[@]} == 1 )); then
+    print -r -- "${matches[1]}"
+    return 0
+  fi
+
+  if (( ${#matches[@]} > 1 )); then
+    print -u2 "ambiguous skill '$spec'; use package/skill"
+  else
+    print -u2 "unknown skill '$spec'"
+  fi
+  return 1
+}
+
+enable_skill() {
+  local spec="$1"
+  local path
+  path="$(skill_path "$spec")"
+  local name="${path:t}"
+  /usr/bin/mkdir -p "$enabled_dir"
+
+  if [[ -e "$enabled_dir/$name" && ! -L "$enabled_dir/$name" ]]; then
+    print -u2 "refusing to replace non-symlink: $enabled_dir/$name"
+    return 1
+  fi
+
+  /usr/bin/ln -sfn "$path" "$enabled_dir/$name"
+}
+
+disable_skill() {
+  local name="$1"
+  local path="$enabled_dir/$name"
+  if [[ -L "$path" ]]; then
+    /usr/bin/unlink "$path"
+  elif [[ -e "$path" ]]; then
+    print -u2 "refusing to remove non-symlink: $path"
+    return 1
+  fi
+}
+
+toggle_skill() {
+  local spec="$1"
+  local state="$2"
+  local skill="${spec#*/}"
+  case "$state" in
+    on)
+      disable_skill "$skill"
+      print "disabled $skill"
+      ;;
+    off|shadowed)
+      enable_skill "$spec"
+      print "enabled $spec"
+      ;;
+    blocked)
+      print -u2 "blocked $spec; refusing to replace non-symlink in $enabled_dir"
+      return 1
+      ;;
+    *)
+      print -u2 "unknown state '$state' for $spec"
+      return 1
+      ;;
+  esac
+}
+
+skill_description() {
+  local file="$1/SKILL.md"
+  [[ -f "$file" ]] || return 0
+  /usr/bin/awk '
+    BEGIN { in_frontmatter=0; desc=0; out="" }
+    NR == 1 && $0 == "---" { in_frontmatter=1; next }
+    in_frontmatter && $0 == "---" { print out; exit }
+    in_frontmatter && /^description:[[:space:]]*>?[[:space:]]*$/ { desc=1; next }
+    in_frontmatter && /^description:[[:space:]]*/ {
+      sub(/^description:[[:space:]]*/, "")
+      gsub(/^["'\''"]|["'\''"]$/, "")
+      print
+      exit
+    }
+    in_frontmatter && desc && /^[A-Za-z0-9_-]+:/ { print out; exit }
+    in_frontmatter && desc {
+      line=$0
+      sub(/^[[:space:]]+/, "", line)
+      out = out (out ? " " : "") line
+    }
+  ' "$file"
+}
+
+skill_state() {
+  local path="$1"
+  local skill="${path:t}"
+  local target
+  if [[ -L "$enabled_dir/$skill" ]]; then
+    target="$(/usr/bin/readlink "$enabled_dir/$skill")"
+    [[ "$target" == "$path" ]] && print on || print shadowed
+  elif [[ -e "$enabled_dir/$skill" ]]; then
+    print blocked
+  else
+    print off
+  fi
+}
+
+skill_metadata_field() {
+  local path="$1"
+  local field="$2"
+  local package_dir="${path:h:h}"
+  local skill="${path:t}"
+  local lock="$package_dir/package-lock.toml"
+  [[ -f "$lock" ]] || return 0
+  /usr/bin/awk -v skill="$skill" -v field="$field" '
+    $0 == "[skills.\"" skill "\"]" { in_skill=1; next }
+    in_skill && /^\[/ { exit }
+    in_skill && $1 == field {
+      sub(/^[^=]+=[[:space:]]*/, "")
+      gsub(/^"|"$/, "")
+      print
+      exit
+    }
+  ' "$lock"
+}
+
+state_rank() {
+  case "$1" in
+    on) print 0 ;;
+    shadowed) print 1 ;;
+    blocked) print 2 ;;
+    off) print 3 ;;
+    *) print 9 ;;
+  esac
+}
+
+skill_rows() {
+  local package skill path state desc display group deprecated rank
+  for path in "$base"/packages/*/skills/*; do
+    [[ -d "$path" ]] || continue
+    package="${path:h:h:t}"
+    skill="${path:t}"
+    state="$(skill_state "$path")"
+    desc="$(skill_description "$path")"
+    group="$(skill_metadata_field "$path" group)"
+    deprecated="$(skill_metadata_field "$path" deprecated)"
+    rank="$(state_rank "$state")"
+    [[ -n "$group" ]] || group="-"
+    display="$(printf '%s  %s  %s  %-30s' "$(package_field "$package" 24)" "$(group_field "$group" "$deprecated" 18)" "$(state_field "$state" 8)" "$skill")"
+    printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" "$display" "$rank" "$package" "$group" "$state" "$skill" "$package/$skill" "$desc" "$deprecated"
+  done | /usr/bin/sort -t $'\t' -k2,2n -k3,3r -k4,4r -k6,6r
+}
+
+list_skills() {
+  local max_desc=96
+  printf "%-8s  %-24s  %-18s  %-30s  %s\n" "State" "Package" "Group" "Skill" "Description"
+  printf "%-8s  %-24s  %-18s  %-30s  %s\n" "-----" "-------" "-----" "-----" "-----------"
+  skill_rows | while IFS=$'\t' read -r _display _rank package group state skill _spec desc deprecated; do
+    if (( ${#desc} > max_desc )); then
+      desc="${desc[1,$((max_desc - 1))]}..."
+    fi
+    printf "%s  %s  %s  %-30s  %s\n" "$(state_field "$state" 8)" "$(package_field "$package" 24)" "$(group_field "$group" "$deprecated" 18)" "$skill" "$desc"
+  done
+}
+
+skill_preview() {
+  local spec="$1"
+  local path
+  path="$(skill_path "$spec")" || return 0
+  local file="$path/SKILL.md"
+  local package="${path:h:h:t}"
+  local skill="${path:t}"
+  local group source_path deprecated
+  group="$(skill_metadata_field "$path" group)"
+  source_path="$(skill_metadata_field "$path" source_path)"
+  deprecated="$(skill_metadata_field "$path" deprecated)"
+  [[ -n "$group" ]] || group="-"
+  [[ -n "$source_path" ]] || source_path="-"
+  [[ -n "$deprecated" ]] || deprecated="false"
+  printf "Package:    %s\nGroup:      %s\nSkill:      %s\nSource:     %s\nDeprecated: %s\nPath:       %s\n\n" "$package" "$group" "$skill" "$source_path" "$deprecated" "$path"
+  [[ -f "$file" ]] && /usr/bin/sed -n '1,120p' "$file"
+}
+
+select_skills_interactive() {
+  local mode="$1"
+  command -v fzf >/dev/null 2>&1 || { print -u2 "fzf is required for $mode"; return 1; }
+  if [[ -z "${AGENTCTL_FZF_FILTER:-}" && (! -t 0 || ! -t 1) ]]; then
+    print -u2 "$mode requires a TTY"
+    return 1
+  fi
+
+  local selections
+  local -a fzf_args
+  local header action_label
+  case "$mode" in
+    enable)
+      action_label="enable selected"
+      ;;
+    toggle)
+      action_label="toggle selected"
+      ;;
+    *)
+      print -u2 "unknown interactive mode: $mode"
+      return 1
+      ;;
+  esac
+  header=$'Package                   Group               State     Skill\n\n tab: select  enter: '"$action_label"$'  ctrl-a: all  ctrl-d: none  ctrl-c: cancel'
+  fzf_args=(
+    --multi
+    --ansi
+    --no-sort
+    --delimiter=$'\t'
+    --with-nth=1
+    --nth=1
+    --header="$header"
+    --prompt='skills> '
+      --preview="$script_path preview-skill {7}"
+    --preview-window='right:60%:wrap'
+    --bind='ctrl-a:select-all,ctrl-d:deselect-all'
+  )
+  if [[ -n "${AGENTCTL_FZF_FILTER:-}" ]]; then
+    fzf_args+=(--filter="$AGENTCTL_FZF_FILTER")
+  fi
+  selections="$(
+    skill_rows | fzf "${fzf_args[@]}"
+  )" || return 0
+  print -r -- "$selections"
+}
+
+enable_interactive() {
+  local selections
+  selections="$(select_skills_interactive enable)" || return $?
+
+  local spec
+  print -r -- "$selections" | while IFS=$'\t' read -r _display _rank _package _group _state _skill spec _desc _deprecated; do
+    [[ -n "$spec" ]] || continue
+    enable_skill "$spec"
+    print "enabled $spec"
+  done
+}
+
+toggle_interactive() {
+  local selections
+  selections="$(select_skills_interactive toggle)" || return $?
+
+  print -r -- "$selections" | while IFS=$'\t' read -r _display _rank _package _group state _skill spec _desc _deprecated; do
+    [[ -n "$spec" ]] || continue
+    toggle_skill "$spec" "$state"
+  done
+}
+
+apply_profile() {
+  local profile="${1:-default}"
+  local file="$base/profiles/$profile.toml"
+  [[ -f "$file" ]] || { print -u2 "missing profile: $file"; return 1; }
+
+  /usr/bin/mkdir -p "$enabled_dir"
+  local path skill
+  for path in "$enabled_dir"/*(N); do
+    [[ -L "$path" ]] || continue
+    /usr/bin/unlink "$path"
+  done
+
+  /usr/bin/awk '
+    /^\[packages\./ {
+      package=$0
+      sub(/^\[packages\./, "", package)
+      sub(/\]$/, "", package)
+      next
+    }
+    package && /^[A-Za-z0-9_-]+[[:space:]]*=[[:space:]]*true/ {
+      skill=$1
+      print package "/" skill
+    }
+  ' "$file" | while read -r spec; do
+    enable_skill "$spec"
+  done
+}
+
+cmd="${1:-}"
+case "$cmd" in
+  list) list_skills ;;
+  manage-interactive|toggle-interactive) toggle_interactive ;;
+  enable-interactive) enable_interactive ;;
+  enable) [[ $# -eq 2 ]] || { usage; exit 2; }; enable_skill "$2" ;;
+  preview-skill) [[ $# -eq 2 ]] || { usage; exit 2; }; skill_preview "$2" ;;
+  disable) [[ $# -eq 2 ]] || { usage; exit 2; }; disable_skill "$2" ;;
+  apply) apply_profile "${2:-default}" ;;
+  import-github|update) "$script_dir/../lib/agent_github_packages.py" "$@" ;;
+  *) usage; exit 2 ;;
+esac

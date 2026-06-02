@@ -1,0 +1,37 @@
+# Enabled means a symlink exists in ~/.agents/skills.
+# This profile intentionally disables every known skill.
+
+[packages.anthropics-skills]
+frontend-design = false
+
+[packages.vercel-labs-skills]
+find-skills = false
+
+[packages.jesper]
+aspire = false
+aspireify = false
+capture-to-vault = false
+dotnet-inspect = false
+
+[packages.mattpocock-skills]
+caveman = false
+diagnose = false
+grill-me = false
+grill-with-docs = false
+handoff = false
+improve-codebase-architecture = false
+prototype = false
+setup-matt-pocock-skills = false
+tdd = false
+to-issues = false
+to-prd = false
+triage = false
+write-a-skill = false
+zoom-out = false
+
+[packages.azdo-work-item-pipeline]
+commit-message-writer = false
+issue-implementer = false
+issue-landing = false
+setup-work-item-pipeline = false
+work-item-pipeline = false

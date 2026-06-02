@@ -1,0 +1,9 @@
+[package]
+name = "mattpocock-skills"
+type = "github"
+
+[github]
+url = "https://github.com/mattpocock/skills"
+branch = "main"
+skills_path = "skills"
+last_imported_commit = "aaf2453fbdfe7a15c07f11d861224f34ab4b53cb"
