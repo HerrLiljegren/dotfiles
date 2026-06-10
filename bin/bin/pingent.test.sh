@@ -17,10 +17,13 @@ run_pingent_json() {
   local payload="$2"
   local expected="$3"
   local logfile="$TEST_DIR/$name.log"
+  local config_dir="$TEST_DIR/$name-config"
 
+  mkdir -p "$config_dir"
   : > "$logfile"
   printf '%s' "$payload" | \
     PATH="$TEST_DIR:$PATH" \
+    PINGENT_CONFIG_DIR="$config_dir" \
     PINGENT_TEST_NOTIFY_LOG="$logfile" \
     "$PINGENT_BIN"
 
@@ -32,9 +35,12 @@ run_pingent_args() {
   local expected="$2"
   shift 2
   local logfile="$TEST_DIR/$name.log"
+  local config_dir="$TEST_DIR/$name-config"
 
+  mkdir -p "$config_dir"
   : > "$logfile"
   PATH="$TEST_DIR:$PATH" \
+    PINGENT_CONFIG_DIR="$config_dir" \
     PINGENT_TEST_NOTIFY_LOG="$logfile" \
     "$PINGENT_BIN" "$@"
 
@@ -74,16 +80,37 @@ assert_pingent_json_silent() {
   fi
 }
 
+assert_pingent_args_silent() {
+  local name="$1"
+  local config_dir="$2"
+  shift 2
+  local logfile="$TEST_DIR/$name.log"
+
+  : > "$logfile"
+  PATH="$TEST_DIR:$PATH" \
+    PINGENT_CONFIG_DIR="$config_dir" \
+    PINGENT_TEST_NOTIFY_LOG="$logfile" \
+    "$PINGENT_BIN" "$@"
+
+  if [ -s "$logfile" ]; then
+    echo "expected $name notification to be suppressed" >&2
+    exit 1
+  fi
+}
+
 run_pingent_json codex_attention \
   '{"hook_event_name":"PermissionRequest","cwd":"/tmp/demo","tool_input":{"command":"git push"}}' \
-  '-u critical Pingent: codex codex needs your input in demo'
+  '-u normal -t 8000 -e -r 271828 Pingent: codex codex needs your input in demo'
 
-run_pingent_json codex_complete \
+DEFAULT_CONFIG_DIR="$TEST_DIR/default-config"
+mkdir -p "$DEFAULT_CONFIG_DIR"
+
+assert_pingent_json_silent codex_complete_default \
   '{"hook_event_name":"Stop","cwd":"/tmp/demo"}' \
-  '-u normal Pingent: codex codex finished in demo'
+  "$DEFAULT_CONFIG_DIR"
 
-run_pingent_args args_complete \
-  '-u normal Pingent: copilot copilot finished in repo' \
+assert_pingent_args_silent args_complete_default \
+  "$DEFAULT_CONFIG_DIR" \
   copilot complete 'copilot finished in repo'
 
 CONFIG_DIR="$TEST_DIR/config"
@@ -101,9 +128,6 @@ cat > "$CONFIG_DIR/config.json" <<'EOF'
 }
 EOF
 
-DEFAULT_CONFIG_DIR="$TEST_DIR/default-config"
-mkdir -p "$DEFAULT_CONFIG_DIR"
-
 assert_pingent_json_silent opencode_error_default \
   '{"source":"opencode","event":"session.error","projectName":"demo"}' \
   "$DEFAULT_CONFIG_DIR"
@@ -120,12 +144,12 @@ if [ -s "$TEST_DIR/dedupe_second.log" ]; then
 fi
 
 run_pingent_json_with_env config_message '{"source":"opencode","event":"session.error","projectName":"demo"}' "$CONFIG_DIR"
-grep -F -- '-u critical Pingent: opencode opencode: failed in demo' "$TEST_DIR/config_message.log" >/dev/null
+grep -F -- '-u normal -t 8000 -e -r 271828 Pingent: opencode opencode: failed in demo' "$TEST_DIR/config_message.log" >/dev/null
 
 grep -F 'permission.asked' /home/jesper/.config/opencode/plugins/pingent.ts >/dev/null
 grep -F 'question' /home/jesper/.config/opencode/plugins/pingent.ts >/dev/null
 
-grep -F 'codex_hooks = true' /home/jesper/.codex/config.toml >/dev/null
+grep -F 'hooks = true' /home/jesper/.codex/config.toml >/dev/null
 grep -F 'PermissionRequest' /home/jesper/.codex/hooks.json >/dev/null
 grep -F 'Stop' /home/jesper/.codex/hooks.json >/dev/null
 grep -F '/home/jesper/bin/pingent' /home/jesper/.codex/hooks.json >/dev/null

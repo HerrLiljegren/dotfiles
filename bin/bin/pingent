@@ -15,7 +15,7 @@ debug_log() {
 }
 
 ensure_state_file() {
-  if [ ! -f "$STATE_FILE" ]; then
+  if [ ! -s "$STATE_FILE" ] || ! jq -e 'type == "object" and (.dedupe | type == "object")' "$STATE_FILE" >/dev/null 2>&1; then
     printf '%s\n' '{"dedupe":{}}' > "$STATE_FILE"
   fi
 }
@@ -53,7 +53,7 @@ event_enabled() {
   fi
 
   case "$event_name" in
-    attention|complete) return 0 ;;
+    attention) return 0 ;;
     *) return 1 ;;
   esac
 }
@@ -119,12 +119,12 @@ send_notification() {
   local session_title="$4"
   local tool_name="$5"
   local message_override="$6"
-  local urgency timestamp title template body replace_args
+  local urgency expire_time timestamp title template body notify_args
 
   case "$normalized_event" in
-    attention) urgency="critical" ;;
+    attention) urgency="normal" ;;
     complete) urgency="normal" ;;
-    error) urgency="critical" ;;
+    error) urgency="normal" ;;
     *) exit 0 ;;
   esac
 
@@ -147,13 +147,14 @@ send_notification() {
     exit 0
   fi
 
-  replace_args=()
-  if [ "$(config_value '.groupNotifications' 'false')" = "true" ]; then
-    replace_args=(-r 271828)
+  expire_time="$(config_value '.expireTimeMs' '8000')"
+  notify_args=(-u "$urgency" -t "$expire_time" -e)
+  if [ "$(config_value '.groupNotifications' 'true')" = "true" ]; then
+    notify_args+=(-r 271828)
   fi
 
   debug_log "notify-send source=$source_name event=$normalized_event title=$title body=$body"
-  notify-send -u "$urgency" "${replace_args[@]}" "$title" "$body"
+  notify-send "${notify_args[@]}" "$title" "$body"
 }
 
 normalize_from_json() {
@@ -238,8 +239,8 @@ EOF
 
   debug_log "json source=$source_name event=$normalized_event project=$project_name tool=$tool_name duration=${duration:-} key=${key:-}"
 
-  min_complete="$(config_value '.minCompleteSeconds' '0')"
-  dedupe_seconds="$(config_value '.dedupeSeconds' '20')"
+  min_complete="$(config_value '.minCompleteSeconds' '30')"
+  dedupe_seconds="$(config_value '.dedupeSeconds' '120')"
 
   if [ "$normalized_event" = "complete" ] && [ -n "$duration" ] && [ "$duration" != "null" ]; then
     if [ "$duration" -lt "$min_complete" ]; then
