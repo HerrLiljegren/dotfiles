@@ -9,7 +9,7 @@ worktree-path = "~/dev/worktrees/{{ repo }}/{{ branch | sanitize }}"
 summary = true
 
 [switch]
-cd = false
+cd = true
 
 # .config/wt.toml
 # [post-create]
@@ -41,7 +41,7 @@ workspaces = "ws-sync"
 exclude = ["bin/", "obj/"]
 
 [post-switch]
-# Per-worktree session workflow.
+# Ensure a per-worktree tmux session exists without moving the current client.
 tmux = """
 S="{{ repo }} {{ branch | sanitize | replace('.', '_') }}"
 W="{{ worktree_path }}"
@@ -51,13 +51,7 @@ if ! tmux has-session -t "=$S" 2>/dev/null; then
   tmux new-session -d -s "$S" -c "$W" -n desk
 fi
 
-if [ -n "$TMUX" ]; then
-  tmux switch-client -t "=$S"
-else
-  tmux attach-session -t "=$S"
-fi
-
-echo "✓ Worktree session '$S'"
+echo "✓ Worktree session ready: '$S'"
 """
 
 # Previous per-project session workflow.
