@@ -1,0 +1,9 @@
+[package]
+name = "kepano-obsidian-skills"
+type = "github"
+
+[github]
+url = "https://github.com/kepano/obsidian-skills"
+branch = "main"
+skills_path = "skills"
+last_imported_commit = "a1dc48e68138490d522c04cbf5822214c6eb1202"
