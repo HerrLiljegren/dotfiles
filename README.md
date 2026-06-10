@@ -40,10 +40,10 @@ Simply restart your shell or run `zsh`. The **Antidote** bootstrap logic in your
 
 ### AI-Augmented Workflow: `updot`
 
-Automate the "Double Commit" (Nvim submodule + Parent repo) with AI-generated messages.
+Automate the "Double Commit" workflow for the Nvim submodule and parent dotfiles repo.
 
-* **`updot`**: No arguments? OpenCode (Gemini 3 Flash) analyzes your `git diff` and writes your commit messages for you.
-* **`updot "msg"`**: Overrides the AI with your own manual commit message.
+* **`updot`**: Uses `codex exec` with `gpt-5.3-codex-spark` to inspect staged, unstaged, and untracked changes, split them into atomic Conventional Commit-style commits, then push each repo after verifying there are no uncommitted changes left. The wrapper prints Codex's final summary and keeps the full Codex transcript in a temp log only when something needs inspection.
+* **`updot "msg"`**: Skips the AI step and commits all current changes in each repo with your manual message before pushing.
 
 ### Configuration Search: `dots`
 

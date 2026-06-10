@@ -76,6 +76,11 @@ autoload -U compinit && compinit
 [[ -f ~/.config/zsh/functions.zsh ]] && source ~/.config/zsh/functions.zsh
 [[ -f ~/.config/zsh/azdo-functions.zsh ]] && source ~/.config/zsh/azdo-functions.zsh
 
+zle     -N             history-fuzzy-search
+bindkey -M emacs '^R'  history-fuzzy-search
+bindkey -M vicmd '^R'  history-fuzzy-search
+bindkey -M viins '^R'  history-fuzzy-search
+
 
 if command -v wt >/dev/null 2>&1; then eval "$(command wt config shell init zsh)"; fi
 
