@@ -42,7 +42,7 @@
 "skills/teach/LEARNING-RECORD-FORMAT.md" = "sha256:855f81017625256584bbf62bd5edb9b0c86605c4cc1139c56acc36b802595d17"
 "skills/teach/MISSION-FORMAT.md" = "sha256:8da6d3ac84eb2eb19f17c260b6acf01c560d3ac7a4501c415eea0e985602f4d7"
 "skills/teach/RESOURCES-FORMAT.md" = "sha256:2bc634a64b0d0daa10904f9222e7aa0d361420dfacabbf092fbe3a72222edc08"
-"skills/teach/SKILL.md" = "sha256:b55c93d761d4d1a70555e6caa86abe1a692892ebdacfda2e51d5ba8612decf31"
+"skills/teach/SKILL.md" = "sha256:d34d0d5e6860726151d0f6c423a0690e75d80f9d3945ae14995d292da4a41ea8"
 "skills/to-issues/SKILL.md" = "sha256:0e6a2973fa5bdf32570227c578f7e474d945dd9281615d31439664c3ef016fce"
 "skills/to-prd/SKILL.md" = "sha256:5212dee3af6a95e60d7daaedac08f15f2789b170468d57d23f722e516a255269"
 "skills/triage/AGENT-BRIEF.md" = "sha256:1c71c747aa97d938f75ec7a4b8fe87451763b38a3ce6348acf2b222e5819b2e5"
@@ -132,8 +132,8 @@ source_path = "engineering/tdd"
 group = "engineering"
 deprecated = false
 [skills."teach"]
-source_path = "in-progress/teach"
-group = "in-progress"
+source_path = "productivity/teach"
+group = "productivity"
 deprecated = false
 [skills."to-issues"]
 source_path = "engineering/to-issues"

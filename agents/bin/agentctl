@@ -96,7 +96,6 @@ usage() {
 usage:
   agentctl list
   agentctl manage-interactive
-  agentctl toggle-interactive
   agentctl enable-interactive
   agentctl enable <skill|package/skill>
   agentctl disable <skill>
@@ -165,30 +164,6 @@ disable_skill() {
     print -u2 "refusing to remove non-symlink: $path"
     return 1
   fi
-}
-
-toggle_skill() {
-  local spec="$1"
-  local state="$2"
-  local skill="${spec#*/}"
-  case "$state" in
-    on)
-      disable_skill "$skill"
-      print "disabled $skill"
-      ;;
-    off|shadowed)
-      enable_skill "$spec"
-      print "enabled $spec"
-      ;;
-    blocked)
-      print -u2 "blocked $spec; refusing to replace non-symlink in $enabled_dir"
-      return 1
-      ;;
-    *)
-      print -u2 "unknown state '$state' for $spec"
-      return 1
-      ;;
-  esac
 }
 
 skill_description() {
@@ -306,47 +281,74 @@ skill_preview() {
 
 select_skills_interactive() {
   local mode="$1"
-  command -v fzf >/dev/null 2>&1 || { print -u2 "fzf is required for $mode"; return 1; }
-  if [[ -z "${AGENTCTL_FZF_FILTER:-}" && (! -t 0 || ! -t 1) ]]; then
-    print -u2 "$mode requires a TTY"
-    return 1
+  command -v gum >/dev/null 2>&1 || { print -u2 "gum is required for $mode"; return 1; }
+  local filter_value="${AGENTCTL_FILTER:-${AGENTCTL_FZF_FILTER:-}}"
+  if [[ -z "$filter_value" || "$mode" == manage ]]; then
+    if [[ ! -r /dev/tty ]]; then
+      print -u2 "$mode requires a TTY"
+      return 1
+    fi
   fi
 
   local selections
-  local -a fzf_args
-  local header action_label
+  local -a gum_args
+  local header selected_rows row
+  local -a rows selected
   case "$mode" in
     enable)
-      action_label="enable selected"
+      header="Select skills to enable"
       ;;
-    toggle)
-      action_label="toggle selected"
+    manage)
+      header="Select final enabled skill set (space toggles, enter applies)"
       ;;
     *)
       print -u2 "unknown interactive mode: $mode"
       return 1
       ;;
   esac
-  header=$'Package                   Group               State     Skill\n\n tab: select  enter: '"$action_label"$'  ctrl-a: all  ctrl-d: none  ctrl-c: cancel'
-  fzf_args=(
-    --multi
-    --ansi
-    --no-sort
-    --delimiter=$'\t'
-    --with-nth=1
-    --nth=1
-    --header="$header"
-    --prompt='skills> '
-      --preview="$script_path preview-skill {7}"
-    --preview-window='right:60%:wrap'
-    --bind='ctrl-a:select-all,ctrl-d:deselect-all'
-  )
-  if [[ -n "${AGENTCTL_FZF_FILTER:-}" ]]; then
-    fzf_args+=(--filter="$AGENTCTL_FZF_FILTER")
+  rows=()
+  selected=()
+  while IFS=$'\t' read -r _display _rank package group state skill spec _desc deprecated; do
+    [[ "$deprecated" == "true" ]] && group="${group}!"
+    row="$(printf '%-8s  %-24s  %-18s  %s' "$state" "$package" "$group" "$skill")"
+    rows+=("$row")
+    if [[ "$mode" == manage && "$state" == on ]]; then
+      selected+=("$row")
+    fi
+  done < <(skill_rows)
+
+  selected_rows="$(IFS=,; print -r -- "${selected[*]:-}")"
+  if [[ "$mode" == manage ]]; then
+    gum_args=(
+      choose
+      --no-limit
+      --height=30
+      --output-delimiter=$'\n'
+      --selected-prefix=' [x] '
+      --unselected-prefix=' [ ] '
+      --cursor=' > '
+      --header="$header"
+    )
+    if [[ -n "$selected_rows" ]]; then
+      gum_args+=(--selected="$selected_rows")
+    fi
+  else
+    gum_args=(
+      filter
+      --no-limit
+      --no-fuzzy-sort
+      --output-delimiter=$'\n'
+      --selected-prefix=' [x] '
+      --unselected-prefix=' [ ] '
+      --indicator=' > '
+      --header="$header"
+      --placeholder='Filter by state, package, group, or skill'
+    )
+    if [[ -n "$filter_value" ]]; then
+      gum_args+=(--value="$filter_value")
+    fi
   fi
-  selections="$(
-    skill_rows | fzf "${fzf_args[@]}"
-  )" || return 0
+  selections="$(gum "${gum_args[@]}" "${rows[@]}")" || return 0
   print -r -- "$selections"
 }
 
@@ -355,21 +357,47 @@ enable_interactive() {
   selections="$(select_skills_interactive enable)" || return $?
 
   local spec
-  print -r -- "$selections" | while IFS=$'\t' read -r _display _rank _package _group _state _skill spec _desc _deprecated; do
+  print -r -- "$selections" | while read -r state package _group skill; do
+    spec="$package/$skill"
     [[ -n "$spec" ]] || continue
     enable_skill "$spec"
     print "enabled $spec"
   done
 }
 
-toggle_interactive() {
+manage_interactive() {
   local selections
-  selections="$(select_skills_interactive toggle)" || return $?
+  selections="$(select_skills_interactive manage)" || return $?
 
-  print -r -- "$selections" | while IFS=$'\t' read -r _display _rank _package _group state _skill spec _desc _deprecated; do
+  local selected_file rows_file
+  selected_file="$(/usr/bin/mktemp)"
+  rows_file="$(/usr/bin/mktemp)"
+  trap '/usr/bin/rm -f "$selected_file" "$rows_file"' EXIT
+
+  print -r -- "$selections" | while read -r _state package _group skill; do
+    [[ -n "$package" && -n "$skill" ]] && print -r -- "$package/$skill"
+  done | /usr/bin/sort -u > "$selected_file"
+
+  skill_rows | while IFS=$'\t' read -r _display _rank _package _group state _skill spec _desc _deprecated; do
+    print -r -- "$spec"$'\t'"$state"
+  done > "$rows_file"
+
+  while IFS=$'\t' read -r spec state; do
     [[ -n "$spec" ]] || continue
-    toggle_skill "$spec" "$state"
-  done
+    local skill="${spec#*/}"
+    if /usr/bin/grep -Fxq "$spec" "$selected_file"; then
+      if [[ "$state" != on ]]; then
+        enable_skill "$spec"
+        print "enabled $spec"
+      fi
+    elif [[ "$state" == on ]]; then
+      disable_skill "$skill"
+      print "disabled $skill"
+    fi
+  done < "$rows_file"
+
+  /usr/bin/rm -f "$selected_file" "$rows_file"
+  trap - EXIT
 }
 
 apply_profile() {
@@ -403,7 +431,7 @@ apply_profile() {
 cmd="${1:-}"
 case "$cmd" in
   list) list_skills ;;
-  manage-interactive|toggle-interactive) toggle_interactive ;;
+  manage-interactive|toggle-interactive) manage_interactive ;;
   enable-interactive) enable_interactive ;;
   enable) [[ $# -eq 2 ]] || { usage; exit 2; }; enable_skill "$2" ;;
   preview-skill) [[ $# -eq 2 ]] || { usage; exit 2; }; skill_preview "$2" ;;

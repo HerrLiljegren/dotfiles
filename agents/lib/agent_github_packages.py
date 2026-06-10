@@ -3,6 +3,7 @@ import argparse
 import hashlib
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -21,6 +22,7 @@ COLORS = {
     "cyan": "\033[36m",
     "reset": "\033[0m",
 }
+PRETTY_OUTPUT = sys.stdout.isatty()
 
 
 class CommandError(Exception):
@@ -28,7 +30,7 @@ class CommandError(Exception):
 
 
 def pretty_enabled():
-    return sys.stdout.isatty() and os.environ.get("NO_COLOR") is None and os.environ.get("TERM") != "dumb"
+    return PRETTY_OUTPUT and os.environ.get("NO_COLOR") is None and os.environ.get("TERM") != "dumb"
 
 
 def style(text, *styles):
@@ -55,6 +57,13 @@ def commit_value(source_url, commit):
     return hyperlink(f"{source_url}/commit/{commit}", commit[:12])
 
 
+def short_commit_value(source_url, commit):
+    short = commit[:12]
+    if not pretty_enabled():
+        return short
+    return hyperlink(f"{source_url}/commit/{commit}", short)
+
+
 def run(args, cwd=None):
     try:
         return subprocess.run(
@@ -68,6 +77,37 @@ def run(args, cwd=None):
     except subprocess.CalledProcessError as exc:
         detail = exc.stderr.strip() or exc.stdout.strip() or str(exc)
         raise CommandError(detail) from exc
+
+
+def pager_command():
+    configured = os.environ.get("AGENTCTL_PAGER") or os.environ.get("PAGER")
+    if configured:
+        return shlex.split(configured)
+    return ["less", "-FRX"]
+
+
+def page_text(text):
+    if not text:
+        return
+    if not sys.stdout.isatty() or os.environ.get("AGENTCTL_NO_PAGER"):
+        print(text, end="")
+        return
+    command = pager_command()
+    if Path(command[0]).name == "less" and not any(arg.startswith("-") and "R" in arg for arg in command[1:]):
+        command.append("-R")
+    try:
+        subprocess.run(command, input=text, text=True, check=False)
+    except FileNotFoundError:
+        print(text, end="")
+
+
+def maybe_page_changelog(text):
+    if not text:
+        return
+    if sys.stdout.isatty() and not os.environ.get("AGENTCTL_NO_PAGER"):
+        page_text(text)
+    else:
+        print(text, end="")
 
 
 def agents_home():
@@ -303,7 +343,62 @@ def print_skill_list(title, skills):
         print(f"  {style('-', 'dim')} {skill}")
 
 
-def print_preview(kind, name, url, branch, old_commit, new_commit, added, removed, changed, affected, skills_path=None):
+def print_changelog(name, source, old_commit, new_commit, changelog):
+    if old_commit is None or changelog is None:
+        return
+
+    print()
+    print(style("Changelog", "bold"))
+    compare = f"{source}/compare/{old_commit}...{new_commit}"
+    print(f"  {label('Compare')}{hyperlink(compare)}")
+
+    if old_commit == new_commit:
+        print("  no upstream commits")
+        return
+    if not changelog:
+        print("  no upstream commits")
+        return
+
+    lines = [
+        f"Package: {name}",
+        f"Compare: {compare}",
+        "",
+    ]
+    for commit, date, message in changelog:
+        message_lines = message.rstrip().splitlines() or ["<empty commit message>"]
+        lines.append(f"  {short_commit_value(source, commit)}  {style(date, 'dim')}  {message_lines[0]}")
+        for line in message_lines[1:]:
+            if line:
+                lines.append(f"                            {line}")
+            else:
+                lines.append("")
+    maybe_page_changelog("\n".join(lines) + "\n")
+
+
+def git_changelog(repo, old_commit, new_commit):
+    if old_commit == new_commit:
+        return []
+    output = run(
+        [
+            "git",
+            "log",
+            "--date=short",
+            "--pretty=format:%H%x1f%ad%x1f%B%x1e",
+            f"{old_commit}..{new_commit}",
+        ],
+        cwd=repo,
+    )
+    entries = []
+    for record in output.split("\x1e"):
+        record = record.strip()
+        if not record:
+            continue
+        commit, date, message = record.split("\x1f", 2)
+        entries.append((commit, date, message))
+    return entries
+
+
+def print_preview(kind, name, url, branch, old_commit, new_commit, added, removed, changed, affected, skills_path=None, changelog=None):
     action = "Import preview" if kind == "import-github" else "Update preview"
     print(style(action, "bold", "cyan"))
     print()
@@ -316,6 +411,8 @@ def print_preview(kind, name, url, branch, old_commit, new_commit, added, remove
     if old_commit:
         print(f"  {label('Current commit')}{commit_value(source, old_commit)}")
     print(f"  {label('Fetched commit')}{commit_value(source, new_commit)}")
+
+    print_changelog(name, source, old_commit, new_commit, changelog)
 
     print_skill_list(style("Added skills", "green"), added)
     print_skill_list(style("Removed skills", "red"), removed)
@@ -436,6 +533,7 @@ def update_one(name, apply):
         new_hashes = imported_hashes_from_source(skills)
         added, removed, changed = diff_skills(old_hashes, new_hashes)
         affected = enabled_affected(manifest_name, set(added + removed + changed))
+        changelog = git_changelog(worktree, old_commit, commit)
         print_preview(
             "update",
             manifest_name,
@@ -448,6 +546,7 @@ def update_one(name, apply):
             skill_labels(changed, metadata),
             affected,
             skills_path,
+            changelog,
         )
         if not apply:
             print()
@@ -461,6 +560,7 @@ def update_one(name, apply):
 
 
 def update_all(args):
+    failures = []
     packages_root = agents_home() / "packages"
     names = []
     for manifest in sorted(packages_root.glob("*/package.toml")):
@@ -473,7 +573,6 @@ def update_all(args):
     if not names:
         print("no GitHub-backed packages found")
         return
-    failures = []
     for name in names:
         try:
             update_one(name, args.apply)
