@@ -50,7 +50,7 @@ shell-integration-features = cursor,sudo,title,no-cursor
 keybind = shift+enter=text:\n
 
 # Rando stuff
-gtk-single-instance = true
+gtk-single-instance = false
 
 # Theme
 theme = Catppuccin Mocha
