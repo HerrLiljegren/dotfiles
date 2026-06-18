@@ -1,40 +1,43 @@
 [files]
-"skills/caveman/SKILL.md" = "sha256:b4bb6fe3bf3da222993ca0aee5e7c6f5368b182dd30ce1172e8f8e3280eb7052"
+"skills/ask-matt/SKILL.md" = "sha256:fb534e029b0b4a27188f62e3839ab027c69e025915229c4524693eb1edcbb64d"
+"skills/codebase-design/DEEPENING.md" = "sha256:125e6b77413ad2bc7cf7a772bc74336d580a50f9e797db2178ed133d62333d06"
+"skills/codebase-design/DESIGN-IT-TWICE.md" = "sha256:21c3264953bd30ee87b181a3ccaf0e70649f461e5ffd7dc654acee4ba1788b31"
+"skills/codebase-design/SKILL.md" = "sha256:a8d50abac5a4018f60e1d911d4b6f4e36454ca14d6c390c0695a578c7de65dad"
+"skills/decision-mapping/SKILL.md" = "sha256:08a19e9bdc9e094b1653dc0862154dd096e40fc8015c1783024be63f9b26870a"
 "skills/design-an-interface/SKILL.md" = "sha256:a2596e9fa2d50e23ba014f64a5b8f9df4eb56b846a52cad152899ef5eb97b085"
-"skills/diagnose/SKILL.md" = "sha256:28886402bbfa0470248086eab9106a103b964b76ae9496e63ff0c8a6761b6d13"
-"skills/diagnose/scripts/hitl-loop.template.sh" = "sha256:b2932630950e5210075bcd6f850e5accf30c101c5367b29eac3a29b4dd8084c8"
-"skills/edit-article/SKILL.md" = "sha256:cc372fb25b552017765aa0dac1b108f77eaee4555d607041efc1ad5d8c995b4a"
+"skills/diagnosing-bugs/SKILL.md" = "sha256:7a0779480f323a66d109404646bcc1a14bf0232b45b3e3ea93b652a035718acb"
+"skills/diagnosing-bugs/scripts/hitl-loop.template.sh" = "sha256:b2932630950e5210075bcd6f850e5accf30c101c5367b29eac3a29b4dd8084c8"
+"skills/domain-modeling/ADR-FORMAT.md" = "sha256:f1f36cd3f8d3b6474ddd5855da4e233bfc4ae1a1c5024909ccf11871819a41b2"
+"skills/domain-modeling/CONTEXT-FORMAT.md" = "sha256:b8cc318f2a4285b530e908b6bc43901c3c5cd11100362636bbc4216639bef597"
+"skills/domain-modeling/SKILL.md" = "sha256:152e2c97239affb12a60c5f4a7e74ab546a49ae169688c81f4e2ccc42dafa579"
+"skills/edit-article/SKILL.md" = "sha256:e10fba546f45357fe0aaa7494b9e186910d4525818d19f9b2ad6f28cc506aa5e"
 "skills/git-guardrails-claude-code/SKILL.md" = "sha256:03c4de7613c712aea336d64c467ea3ed14be2cbd52345925fe949c75c01c29f7"
 "skills/git-guardrails-claude-code/scripts/block-dangerous-git.sh" = "sha256:234922b83c0a1737ee7300806c21ac0f389b07aaeb65c2d71ccedafbc5e1ea4b"
-"skills/grill-me/SKILL.md" = "sha256:74147eb6010a65957efef2b9e0f0b3ff935c1def7fc117697151b1d0f3610556"
-"skills/grill-with-docs/ADR-FORMAT.md" = "sha256:f1f36cd3f8d3b6474ddd5855da4e233bfc4ae1a1c5024909ccf11871819a41b2"
-"skills/grill-with-docs/CONTEXT-FORMAT.md" = "sha256:b8cc318f2a4285b530e908b6bc43901c3c5cd11100362636bbc4216639bef597"
-"skills/grill-with-docs/SKILL.md" = "sha256:3e35025119ba03efe7983dfdec3c8b96918142e3978512f3c2bf66d428310c7e"
-"skills/handoff/SKILL.md" = "sha256:d215dd8f2a19bf85fdaf67a3cdb5077641f6b4108f229ba79579414793d7b0a3"
-"skills/improve-codebase-architecture/DEEPENING.md" = "sha256:9577485f4fc32c0267639a9151bb41c8af0f8f6086e4bf8b84d5b236e30604e9"
-"skills/improve-codebase-architecture/HTML-REPORT.md" = "sha256:8a8bcdbb578066271efe6ff675c831a6a4c4c7fd2081d6b5c9bc2e5fabc741d5"
-"skills/improve-codebase-architecture/INTERFACE-DESIGN.md" = "sha256:678c3e34f1339015053212b3316bf0b676c70aa251050a0613667d4e755fb35e"
-"skills/improve-codebase-architecture/LANGUAGE.md" = "sha256:6feca2140439c54a774749e8367f18350899ff69c777144ed2248cd4407949fa"
-"skills/improve-codebase-architecture/SKILL.md" = "sha256:f00de04c7bb83cfd0ed1f97f3401a83838212c30856912ee44ba406649e6c749"
+"skills/grill-me/SKILL.md" = "sha256:6189dfceb7304a6e5558f75d87e68fa3bc7fcf7ba120e44f21f8a61fe01eba54"
+"skills/grill-with-docs/SKILL.md" = "sha256:610d091047bcfb9db0f75c057d15538481a721111579fc5ec7f83ad9131a2165"
+"skills/grilling/SKILL.md" = "sha256:fe00af3e1815f97c0a7644605479328a726b5cd95ba6ef56a4be2a92fae6c20f"
+"skills/handoff/SKILL.md" = "sha256:94bee8c16cbfcf9f1e15187f7e5d0d5a93c4adb7c512feceecaab80c8ff7c059"
+"skills/implement/SKILL.md" = "sha256:6e79ad337b162393ec5bd4334c37c468a7f18281856d8b15b1b9e6fb4246c252"
+"skills/improve-codebase-architecture/HTML-REPORT.md" = "sha256:0b0936104158abeef7246ff6cbabefa4dc055f17589f2833f2d93001421910a1"
+"skills/improve-codebase-architecture/SKILL.md" = "sha256:0026900866ed2a542af0559cef11dd7ae707633b75cc6f668c2e7c0a33e35032"
 "skills/migrate-to-shoehorn/SKILL.md" = "sha256:de4da4c11d924fac79c924b2ee3d2db4a5cb98386eb490a599119463d036ae72"
 "skills/obsidian-vault/SKILL.md" = "sha256:7bed1d552aa5e9345e493cd62cb13e65c5d829d153c349afdb2cb91c809fa6c4"
 "skills/prototype/LOGIC.md" = "sha256:da91dc92195c00d5dc33863b8c1a030998025a0f8583ebf2babd770825b7f70c"
-"skills/prototype/SKILL.md" = "sha256:a653deb65afa2ee8f45c68f6ef4f593147171b386e994c8cccf89292d9ea9d75"
+"skills/prototype/SKILL.md" = "sha256:863611f7fb65b78265188466cacdb365cbad129d36844ec57603c708d2026b50"
 "skills/prototype/UI.md" = "sha256:d76d565149ee50456c5ddc5e29c27fec8737637874fe5c37d970db085a200b27"
 "skills/qa/SKILL.md" = "sha256:d9727aac6503981bf69bdd8b37e0d85b32b8fbd353a57528c252dac1337ab761"
 "skills/request-refactor-plan/SKILL.md" = "sha256:d59de4ba6cc1fe2dd267e8b9b5a1fd88e3e739e2130bc9dd78061d2a072830b8"
-"skills/review/SKILL.md" = "sha256:5700f30d3f06706ee56c099adceec222fef26dbcf82817ff604962634e246b2e"
+"skills/resolving-merge-conflicts/SKILL.md" = "sha256:c7c9ba81362a786aac05d2223123bf1bd2f8a99c3243a72882ede9c68bedfb24"
+"skills/review/SKILL.md" = "sha256:0f1c3edf07b730ae7644c68d716faaa43be0fd81a27c06e13baf6b55712e7edb"
 "skills/scaffold-exercises/SKILL.md" = "sha256:75f5c9d771606fb9762f16522efc954df11c324f87148d8ff069bce166257de9"
-"skills/setup-matt-pocock-skills/SKILL.md" = "sha256:c778d4e3d86ecc9125c357279a86780657b5db23110e1f7acf4f46d2441e7204"
-"skills/setup-matt-pocock-skills/domain.md" = "sha256:a8cc3d1c11c9cdea455f39c4090cf61ac273f2474dd6f229ab0c2b9b1deec759"
+"skills/setup-matt-pocock-skills/SKILL.md" = "sha256:16a4b5bfb0a282ed387e8b1609d0026e53e68ebf89bc4b87edf07ce66bb16912"
+"skills/setup-matt-pocock-skills/domain.md" = "sha256:25be404b58798b3cb2d51c93dba2ab052fc3a425632185726ac3f5fcff193b99"
 "skills/setup-matt-pocock-skills/issue-tracker-github.md" = "sha256:f0e138631d1fc8aedc9e05d25bc688b97679f81eae7a7c760dd35e0790568370"
 "skills/setup-matt-pocock-skills/issue-tracker-gitlab.md" = "sha256:94c574647c4755f2a807742f5e78e7cef586c100266d54501d0e55445c1b1807"
 "skills/setup-matt-pocock-skills/issue-tracker-local.md" = "sha256:9a052f4599525e581721ec24cb2ae3e0296b79053e39f684b540d34d3a4f6528"
 "skills/setup-matt-pocock-skills/triage-labels.md" = "sha256:4f53c9b40ce2651e3611aa090eaedbd6dbc9b71ef8c5f7e65eac0d8263190d0d"
 "skills/setup-pre-commit/SKILL.md" = "sha256:872f4037cb7e6e0e340d4175c086550072959925dffc87b160d1a30dc9f63bbd"
-"skills/tdd/SKILL.md" = "sha256:af059705061156fd4845ddbb736fe92b564118ac5f03551e09ef9e8f6d970638"
-"skills/tdd/deep-modules.md" = "sha256:f2123700bf953db1740625686c75bdd145efd486357c47c6818c869fee657a32"
-"skills/tdd/interface-design.md" = "sha256:764c5ff0e3fa6b4ab7095eb65ccc7201e090baf19fa16051dfdb72c06d27417d"
+"skills/tdd/SKILL.md" = "sha256:13722957277ed4960061a2d254a0ed7d86f95693e88b40d1c68307e7fdc98287"
 "skills/tdd/mocking.md" = "sha256:3ceb807fdf4a47d6a93d4d9a891e5ba6d362a6247bd08adc451feebfc17361ef"
 "skills/tdd/refactoring.md" = "sha256:54fced22dd1911b7094c3fe7979b7c1a40d40be307482c4adf7dc0588f27d6cc"
 "skills/tdd/tests.md" = "sha256:e12182f5c4c6a844b7c6ab4b8d2623b642aaaae5460fe58ed087efd4f3d5fb8a"
@@ -42,29 +45,41 @@
 "skills/teach/LEARNING-RECORD-FORMAT.md" = "sha256:855f81017625256584bbf62bd5edb9b0c86605c4cc1139c56acc36b802595d17"
 "skills/teach/MISSION-FORMAT.md" = "sha256:8da6d3ac84eb2eb19f17c260b6acf01c560d3ac7a4501c415eea0e985602f4d7"
 "skills/teach/RESOURCES-FORMAT.md" = "sha256:2bc634a64b0d0daa10904f9222e7aa0d361420dfacabbf092fbe3a72222edc08"
-"skills/teach/SKILL.md" = "sha256:d34d0d5e6860726151d0f6c423a0690e75d80f9d3945ae14995d292da4a41ea8"
-"skills/to-issues/SKILL.md" = "sha256:0e6a2973fa5bdf32570227c578f7e474d945dd9281615d31439664c3ef016fce"
-"skills/to-prd/SKILL.md" = "sha256:5212dee3af6a95e60d7daaedac08f15f2789b170468d57d23f722e516a255269"
+"skills/teach/SKILL.md" = "sha256:6d2dbe5e03084cf26fef66b535127b36cd1bcbe9478e26b0626029cd51dc2259"
+"skills/to-issues/SKILL.md" = "sha256:f8a72a5bc88aa830ae62b323a52b08934da52851b010984c55829a644c7f6ba6"
+"skills/to-prd/SKILL.md" = "sha256:db7e7188ac4fd47f4925ae6550e0233365b3b05be40f45235ab3a0a6b0165156"
 "skills/triage/AGENT-BRIEF.md" = "sha256:1c71c747aa97d938f75ec7a4b8fe87451763b38a3ce6348acf2b222e5819b2e5"
 "skills/triage/OUT-OF-SCOPE.md" = "sha256:8ed8cf27833444060c81b3961a83c0e3d8e6cf2fcb2ddf6f8b07c6655cbb0d85"
-"skills/triage/SKILL.md" = "sha256:b819f0285e4e5814ac6472d0217f07dc9f23d2fdae3ebb0dd31d98360d8ac029"
+"skills/triage/SKILL.md" = "sha256:fa78dfc3e6941cea678486514a27d378ff1c5c8e3b0bdfbbff233c49855a53b3"
 "skills/ubiquitous-language/SKILL.md" = "sha256:2449e2345b96b9f1e861c697b5eab50d03ae1254481a4306b6f815684e523b3a"
-"skills/write-a-skill/SKILL.md" = "sha256:be8f20e66309258034b82a7db5040b03798aa40546f9d387662c2bd86be23123"
 "skills/writing-beats/SKILL.md" = "sha256:0843367d0a653bb17e61b3771d0ec08fa463663bc0ab6f3f421141b2687c4429"
 "skills/writing-fragments/SKILL.md" = "sha256:4ffa34a701caff27da54b9e073fef48471f0ccafee009d404c22ae542d0e8dea"
+"skills/writing-great-skills/GLOSSARY.md" = "sha256:df0d042f2b69b8a952bd4b0e6904e2eb316f0203c1a5f09169da7f75a5575a61"
+"skills/writing-great-skills/SKILL.md" = "sha256:7c6ba7ec25bb2c0e173c52cdc2da878aef0b083ec19a9c1799934e480c8833cc"
 "skills/writing-shape/SKILL.md" = "sha256:81a542b95fa865325835bf5ec7644a98e657c1e0f3374c56cb9f3b42b374660f"
-"skills/zoom-out/SKILL.md" = "sha256:2a6894c7f9b1c9c55f451c625a834c4f377e217b623a85280e55db5fe9cacf48"
 
-[skills."caveman"]
-source_path = "productivity/caveman"
-group = "productivity"
+[skills."ask-matt"]
+source_path = "engineering/ask-matt"
+group = "engineering"
+deprecated = false
+[skills."codebase-design"]
+source_path = "engineering/codebase-design"
+group = "engineering"
+deprecated = false
+[skills."decision-mapping"]
+source_path = "in-progress/decision-mapping"
+group = "in-progress"
 deprecated = false
 [skills."design-an-interface"]
 source_path = "deprecated/design-an-interface"
 group = "deprecated"
 deprecated = true
-[skills."diagnose"]
-source_path = "engineering/diagnose"
+[skills."diagnosing-bugs"]
+source_path = "engineering/diagnosing-bugs"
+group = "engineering"
+deprecated = false
+[skills."domain-modeling"]
+source_path = "engineering/domain-modeling"
 group = "engineering"
 deprecated = false
 [skills."edit-article"]
@@ -83,9 +98,17 @@ deprecated = false
 source_path = "engineering/grill-with-docs"
 group = "engineering"
 deprecated = false
+[skills."grilling"]
+source_path = "productivity/grilling"
+group = "productivity"
+deprecated = false
 [skills."handoff"]
 source_path = "productivity/handoff"
 group = "productivity"
+deprecated = false
+[skills."implement"]
+source_path = "engineering/implement"
+group = "engineering"
 deprecated = false
 [skills."improve-codebase-architecture"]
 source_path = "engineering/improve-codebase-architecture"
@@ -111,6 +134,10 @@ deprecated = true
 source_path = "deprecated/request-refactor-plan"
 group = "deprecated"
 deprecated = true
+[skills."resolving-merge-conflicts"]
+source_path = "engineering/resolving-merge-conflicts"
+group = "engineering"
+deprecated = false
 [skills."review"]
 source_path = "in-progress/review"
 group = "in-progress"
@@ -151,10 +178,6 @@ deprecated = false
 source_path = "deprecated/ubiquitous-language"
 group = "deprecated"
 deprecated = true
-[skills."write-a-skill"]
-source_path = "productivity/write-a-skill"
-group = "productivity"
-deprecated = false
 [skills."writing-beats"]
 source_path = "in-progress/writing-beats"
 group = "in-progress"
@@ -163,11 +186,11 @@ deprecated = false
 source_path = "in-progress/writing-fragments"
 group = "in-progress"
 deprecated = false
+[skills."writing-great-skills"]
+source_path = "productivity/writing-great-skills"
+group = "productivity"
+deprecated = false
 [skills."writing-shape"]
 source_path = "in-progress/writing-shape"
 group = "in-progress"
-deprecated = false
-[skills."zoom-out"]
-source_path = "engineering/zoom-out"
-group = "engineering"
 deprecated = false

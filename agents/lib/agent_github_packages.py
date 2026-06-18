@@ -234,12 +234,30 @@ def discover_skills(repo_root):
         raise CommandError("no SKILL.md files found")
 
     skill_dirs = [p.parent for p in skill_mds]
-    root = Path(os.path.commonpath([str(p) for p in skill_dirs]))
+    root = skill_root_from_dirs(repo_root, skill_dirs)
     if not all(root in p.parents or root == p for p in skill_dirs):
         rels = ", ".join(str(p.relative_to(repo_root)) for p in skill_dirs[:8])
         raise CommandError(f"ambiguous skill roots; found skills under multiple parents: {rels}")
     skills_path = "." if root == repo_root else str(root.relative_to(repo_root))
     return skills_path, validate_skills(root)
+
+
+def skill_root_from_dirs(repo_root, skill_dirs):
+    root = Path(os.path.commonpath([str(p) for p in skill_dirs]))
+    if len(skill_dirs) != 1:
+        return root
+
+    skill_dir = skill_dirs[0]
+    try:
+        relative = skill_dir.relative_to(repo_root)
+    except ValueError:
+        return root
+
+    parts = relative.parts
+    if len(parts) > 1 and "skills" in parts[:-1]:
+        skills_index = parts.index("skills")
+        return repo_root.joinpath(*parts[: skills_index + 1])
+    return root
 
 
 def validate_skills(skills_root):
