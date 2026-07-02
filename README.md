@@ -3,7 +3,7 @@
 ### 1. Clone the repository
 
 ```bash
-git clone --recursive git@github.com:HerrLiljegren/dotfiles.git ~/dotfiles
+git clone git@github.com:HerrLiljegren/dotfiles.git ~/dotfiles
 cd ~/dotfiles
 
 ```
@@ -40,16 +40,16 @@ Simply restart your shell or run `zsh`. The **Antidote** bootstrap logic in your
 
 ### AI-Augmented Workflow: `updot`
 
-Automate the "Double Commit" workflow for the Nvim submodule and parent dotfiles repo.
+Automate committing and pushing the dotfiles repo.
 
-* **`updot`**: Uses `codex exec` with `gpt-5.3-codex-spark` to inspect staged, unstaged, and untracked changes, split them into atomic Conventional Commit-style commits, then push each repo after verifying there are no uncommitted changes left. The wrapper prints Codex's final summary and keeps the full Codex transcript in a temp log only when something needs inspection.
-* **`updot "msg"`**: Skips the AI step and commits all current changes in each repo with your manual message before pushing.
+* **`updot`**: Uses `codex exec` with `gpt-5.3-codex-spark` to inspect staged, unstaged, and untracked changes, split them into atomic Conventional Commit-style commits, then push after verifying there are no uncommitted changes left. The wrapper prints Codex's final summary and keeps the full Codex transcript in a temp log only when something needs inspection.
+* **`updot "msg"`**: Skips the AI step and commits all current changes with your manual message before pushing.
 
 ### Configuration Search: `dots`
 
 The ultimate "find and edit" command.
 
-* **`dots`**: Triggers a fuzzy search (via `fzf` and `fd`) with a live `bat` preview of your configs. Pressing `Enter` opens the file in your Nvim/Kickstart setup.
+* **`dots`**: Triggers a fuzzy search (via `fzf` and `fd`) with a live `bat` preview of your configs. Pressing `Enter` opens the file in your Neovim/LazyVim setup.
 
 ### Screenshots (Greenshot-style on Hyprland)
 
@@ -64,7 +64,7 @@ The `shot` script emulates Greenshot muscle-memory on Hyprland (region/window/fu
 | **OS** | Arch Linux (WSL) |
 | **Shell** | Zsh + Antidote |
 | **Symlink Mgr** | GNU Stow |
-| **Editor** | Neovim (Kickstart Submodule) |
+| **Editor** | Neovim (LazyVim, tracked directly) |
 | **AI CLI** | OpenCode (google/gemini-3-flash-preview) |
 | **Navigation** | Zoxide + fzf-tab |
 

@@ -13,7 +13,8 @@ Answer Vim questions quickly, using the user's real Neovim and Zed setup as the 
 
 - Neovim config: `~/.config/nvim`
   - Current target: `/home/jesper/dotfiles/nvim/.config/nvim`
-  - Check `init.lua`, `lua/kickstart/plugins/*.lua`, `lua/custom/plugins/init.lua`, `lua/plugins/*.lua`, and `lazy-lock.json`.
+  - LazyVim is tracked directly in dotfiles, not as a Kickstart submodule.
+  - Check `init.lua`, `lua/config/*.lua`, `lua/plugins/*.lua`, `lazyvim.json`, and `lazy-lock.json`.
 - Zed config:
   - `~/.config/zed/settings.json`
   - `~/.config/zed/keymap.json`

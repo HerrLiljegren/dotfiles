@@ -10,9 +10,10 @@ import sys
 import tempfile
 import tomllib
 from pathlib import Path
+from urllib.parse import unquote, urlparse
 
 
-GITHUB_RE = re.compile(r"^https://github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+?)(?:\.git)?/?$")
+GITHUB_SLUG_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
 COLORS = {
     "bold": "\033[1m",
     "dim": "\033[2m",
@@ -118,12 +119,49 @@ def cache_home():
     return Path(os.environ.get("AGENTCTL_CACHE_HOME", Path.home() / ".cache" / "agentctl" / "github"))
 
 
-def parse_github_url(url):
-    match = GITHUB_RE.match(url)
-    if not match:
+def parse_github_location(url):
+    parsed = urlparse(url)
+    if parsed.scheme != "https" or parsed.netloc != "github.com":
         raise CommandError("expected a GitHub HTTPS repo URL like https://github.com/owner/repo")
-    owner, repo = match.groups()
-    return owner, repo.removesuffix(".git"), f"https://github.com/{owner}/{repo.removesuffix('.git')}.git"
+
+    parts = [unquote(part) for part in parsed.path.split("/") if part]
+    if len(parts) < 2:
+        raise CommandError("expected a GitHub HTTPS repo URL like https://github.com/owner/repo")
+
+    owner, repo = parts[0], parts[1].removesuffix(".git")
+    if not GITHUB_SLUG_RE.match(owner) or not GITHUB_SLUG_RE.match(repo):
+        raise CommandError("expected a GitHub HTTPS repo URL like https://github.com/owner/repo")
+
+    rest = parts[2:]
+    if not rest:
+        return owner, repo, None
+
+    if rest[0] == "blob" and len(rest) >= 3 and rest[-1] == "SKILL.md":
+        blob_parts = rest[1:]
+        if any(part in {"", ".", ".."} for part in blob_parts):
+            raise CommandError("GitHub SKILL.md URL contains an invalid path segment")
+        return owner, repo, blob_parts
+
+    raise CommandError(
+        "expected a GitHub HTTPS repo URL or SKILL.md blob URL like "
+        "https://github.com/owner/repo/blob/main/path/SKILL.md"
+    )
+
+
+def clone_url_for(owner, repo):
+    return f"https://github.com/{owner}/{repo}.git"
+
+
+def parse_github_url(url):
+    owner, repo, blob_parts = parse_github_location(url)
+    if blob_parts is not None:
+        raise CommandError("expected a GitHub HTTPS repo URL like https://github.com/owner/repo")
+    return owner, repo, clone_url_for(owner, repo)
+
+
+def parse_github_import_url(url):
+    owner, repo, blob_parts = parse_github_location(url)
+    return owner, repo, clone_url_for(owner, repo), blob_parts
 
 
 def package_name(owner, repo):
@@ -194,6 +232,23 @@ def default_branch(repo):
     return ref.rsplit("/", 1)[-1]
 
 
+def remote_branches(repo):
+    output = run(["git", "for-each-ref", "--format=%(refname:strip=3)", "refs/remotes/origin"], cwd=repo)
+    return sorted(line for line in output.splitlines() if line and line != "HEAD")
+
+
+def resolve_blob_skill(repo, blob_parts):
+    branches = sorted(remote_branches(repo), key=lambda branch: (len(branch.split("/")), len(branch)), reverse=True)
+    for branch in branches:
+        branch_parts = branch.split("/")
+        if blob_parts[: len(branch_parts)] != branch_parts:
+            continue
+        skill_parts = blob_parts[len(branch_parts) :]
+        if skill_parts and skill_parts[-1] == "SKILL.md":
+            return branch, Path(*skill_parts)
+    raise CommandError("could not resolve branch/path from GitHub SKILL.md URL")
+
+
 def checkout_worktree(repo, branch):
     tmp = Path(tempfile.mkdtemp(prefix="agentctl-github-"))
     try:
@@ -234,12 +289,28 @@ def discover_skills(repo_root):
         raise CommandError("no SKILL.md files found")
 
     skill_dirs = [p.parent for p in skill_mds]
+    canonical_root = repo_root / "skills"
+    if any(canonical_root in p.parents for p in skill_dirs):
+        return "skills", validate_skills(canonical_root)
+
     root = skill_root_from_dirs(repo_root, skill_dirs)
     if not all(root in p.parents or root == p for p in skill_dirs):
         rels = ", ".join(str(p.relative_to(repo_root)) for p in skill_dirs[:8])
         raise CommandError(f"ambiguous skill roots; found skills under multiple parents: {rels}")
     skills_path = "." if root == repo_root else str(root.relative_to(repo_root))
     return skills_path, validate_skills(root)
+
+
+def discover_linked_skill(repo_root, skill_md_path):
+    skill_md = repo_root / skill_md_path
+    if skill_md.name != "SKILL.md":
+        raise CommandError(f"direct skill URL must point to SKILL.md: {skill_md_path}")
+    if not skill_md.is_file():
+        raise CommandError(f"direct skill URL did not resolve to a file: {skill_md_path}")
+
+    skills_root = skill_md.parent
+    skills_path = "." if skills_root == repo_root else str(skills_root.relative_to(repo_root))
+    return skills_path, validate_skills(skills_root)
 
 
 def skill_root_from_dirs(repo_root, skill_dirs):
@@ -262,6 +333,15 @@ def skill_root_from_dirs(repo_root, skill_dirs):
 
 def validate_skills(skills_root):
     skills = {}
+    root_skill = skills_root / "SKILL.md"
+    if root_skill.is_file():
+        metadata = parse_frontmatter(root_skill)
+        name = metadata.get("name")
+        description = metadata.get("description")
+        if not name or not description:
+            raise CommandError(f"missing name or description in {root_skill}")
+        return {name: skills_root}
+
     skill_dirs = sorted(p.parent for p in skills_root.rglob("SKILL.md") if ".git" not in p.parts)
     for skill_dir in skill_dirs:
         metadata = parse_frontmatter(skill_dir / "SKILL.md")
@@ -447,7 +527,7 @@ def sync_package(pkg, skills, name, url, branch, skills_path, commit, skills_roo
         shutil.rmtree(pkg / "skills", ignore_errors=True)
     (pkg / "skills").mkdir(parents=True, exist_ok=True)
     for skill_name, src in skills.items():
-        shutil.copytree(src, pkg / "skills" / skill_name, copy_function=shutil.copy2)
+        shutil.copytree(src, pkg / "skills" / skill_name, ignore=shutil.ignore_patterns(".git"), copy_function=shutil.copy2)
     write_package_toml(pkg / "package.toml", name, url, branch, skills_path, commit)
     write_lock_toml(
         pkg / "package-lock.toml",
@@ -495,7 +575,7 @@ def skill_labels(names, metadata):
     labels = []
     for name in names:
         source_path = metadata.get(name, {}).get("source_path")
-        labels.append(source_path or name)
+        labels.append(source_path if source_path and source_path != "." else name)
     return sorted(labels)
 
 
@@ -510,17 +590,24 @@ def imported_hashes_from_installed_package(pkg):
 
 
 def import_github(args):
-    owner, repo_name, clone_url = parse_github_url(args.url)
+    owner, repo_name, clone_url, blob_parts = parse_github_import_url(args.url)
     name = package_name(owner, repo_name)
     pkg = package_dir(name)
     if pkg.exists():
         raise CommandError(f"package already exists: {pkg}\nmove or remove it, then rerun import-github")
 
     cache = ensure_cache(name, clone_url)
-    branch = default_branch(cache)
+    linked_skill_path = None
+    if blob_parts is None:
+        branch = default_branch(cache)
+    else:
+        branch, linked_skill_path = resolve_blob_skill(cache, blob_parts)
     worktree, commit = checkout_worktree(cache, branch)
     try:
-        skills_path, skills = discover_skills(worktree)
+        if linked_skill_path is None:
+            skills_path, skills = discover_skills(worktree)
+        else:
+            skills_path, skills = discover_linked_skill(worktree, linked_skill_path)
         skills_root = worktree if skills_path == "." else worktree / skills_path
         metadata = skill_metadata_from_source(skills_root, skills)
         added = sorted(skills)

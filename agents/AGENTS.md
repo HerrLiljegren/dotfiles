@@ -17,7 +17,7 @@ GitHub-backed packages are update-owned snapshots. Do not make persistent local 
 
 ## Command Contract
 
-- `agentctl import-github <https://github.com/owner/repo>` previews an import and writes nothing.
+- `agentctl import-github <https://github.com/owner/repo[/blob/branch/path/SKILL.md]>` previews an import and writes nothing.
 - `agentctl import-github <https://github.com/owner/repo> --apply` creates the derived package, copies discovered skill directories, and writes package metadata.
 - `agentctl update <package>` previews changes for one GitHub-backed package.
 - `agentctl update <package> --apply` applies a clean update.

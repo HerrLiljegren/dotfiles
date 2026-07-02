@@ -100,7 +100,7 @@ usage:
   agentctl enable <skill|package/skill>
   agentctl disable <skill>
   agentctl apply [profile]
-  agentctl import-github <https://github.com/owner/repo> [--apply]
+  agentctl import-github <https://github.com/owner/repo[/blob/branch/path/SKILL.md]> [--apply]
   agentctl update <package|--all> [--apply]
 
 Enabled means a symlink exists in ~/.agents/skills.
