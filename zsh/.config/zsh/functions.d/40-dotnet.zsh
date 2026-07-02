@@ -58,3 +58,19 @@ dprun() {
     dotnet run --project "$project" --launch-profile "$profile"
   fi
 }
+
+dbuild() {
+  local target="."
+
+  if [[ $# -gt 0 && ( -e "$1" || "$1" == *.slnx || "$1" == *.sln || "$1" == *.csproj ) ]]; then
+    target="$1"
+    shift
+  fi
+
+  dotnet build "$target" \
+    --nologo \
+    --tl:off \
+    -v:quiet \
+    "-clp:ErrorsOnly;Summary;ForceConsoleColor" \
+    "$@"
+}

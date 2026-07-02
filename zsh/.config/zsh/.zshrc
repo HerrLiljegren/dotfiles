@@ -6,12 +6,18 @@ export SSL_CERT_DIR="$HOME/.aspnet/dev-certs/trust:/etc/ssl/certs"
 export DOTNET_ROOT="$HOME/.dotnet"
 export DOTNET_ROOT_X64="$DOTNET_ROOT"
 
+# export untracked .zshenv.local if it exists 
+if [[ -f ~/.zshenv.local ]]; then
+  source ~/.zshenv.local
+fi
+
 path=(
   "$HOME/bin"
   "$HOME/dotfiles/agents/bin"
   "$HOME/go/bin"
   "$DOTNET_ROOT"
   "$DOTNET_ROOT/tools"
+  "$HOME/.bun/bin"
   $path
 )
 

@@ -3,9 +3,8 @@
 updot() {
   emulate -L zsh
 
-  # Commit and push dotfiles, including the nested Neovim config when it has
-  # changes. If no message is supplied, Codex Spark splits the work into
-  # atomic conventional commits before this wrapper pushes.
+  # Commit and push dotfiles. If no message is supplied, Codex Spark splits the
+  # work into atomic conventional commits before this wrapper pushes.
   local msg="$*"
   local codex_model="gpt-5.3-codex-spark"
   local codex_prompt="Split current changes into atomic git commits.
@@ -148,24 +147,10 @@ Final response: concise. List created commit hashes and subjects, or explain why
     echo "$repo_name pushed."
   }
 
-  if [[ -d "nvim/.config/nvim" ]]; then
-    echo "Checking Nvim submodule..."
-    (
-      cd nvim/.config/nvim || return
-      if [[ -n $(git status -s) ]]; then
-        if [[ -n "$msg" ]]; then
-          _updot_manual_commit_and_push "Nvim fork" "master" "$msg"
-        else
-          _updot_codex_commit_and_push "Nvim fork" "master"
-        fi
-      fi
-    )
-  fi
-
-  echo "Updating parent dotfiles..."
+  echo "Updating dotfiles..."
   if [[ -n "$msg" ]]; then
-    _updot_manual_commit_and_push "parent dotfiles" "main" "$msg"
+    _updot_manual_commit_and_push "dotfiles" "main" "$msg"
   else
-    _updot_codex_commit_and_push "parent dotfiles" "main"
+    _updot_codex_commit_and_push "dotfiles" "main"
   fi
 }
