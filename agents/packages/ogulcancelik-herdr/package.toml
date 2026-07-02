@@ -1,0 +1,9 @@
+[package]
+name = "ogulcancelik-herdr"
+type = "github"
+
+[github]
+url = "https://github.com/ogulcancelik/herdr"
+branch = "master"
+skills_path = "."
+last_imported_commit = "c71c6c108245b91f6478d95a3abf9a9a9e2e57a9"
