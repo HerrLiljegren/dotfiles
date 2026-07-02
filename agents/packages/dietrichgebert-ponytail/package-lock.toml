@@ -1,0 +1,27 @@
+[files]
+"skills/ponytail-audit/SKILL.md" = "sha256:c0f03b6e1d95809f74e989f4bc51a6959ce98696aef0e334f0c5c332f9504bd5"
+"skills/ponytail-debt/SKILL.md" = "sha256:83dc090d3c4ad4cf1fcde236e607c4c4c4c42700fb68e7856041bdac69a7df17"
+"skills/ponytail-help/SKILL.md" = "sha256:61ec008731e4788e34000c95e76bc324254849df54dd8fff63ece57dd7c4442b"
+"skills/ponytail-review/SKILL.md" = "sha256:f77338e574a8ca0a7f7a8964322c39a88bc16536e13c707b7fd57ec50848f36a"
+"skills/ponytail/SKILL.md" = "sha256:1b9eaae4b639a2a6c311ad88a83e2bb0b38a612c17c84e8ac0b7603ec325604e"
+
+[skills."ponytail"]
+source_path = "ponytail"
+group = "."
+deprecated = false
+[skills."ponytail-audit"]
+source_path = "ponytail-audit"
+group = "."
+deprecated = false
+[skills."ponytail-debt"]
+source_path = "ponytail-debt"
+group = "."
+deprecated = false
+[skills."ponytail-help"]
+source_path = "ponytail-help"
+group = "."
+deprecated = false
+[skills."ponytail-review"]
+source_path = "ponytail-review"
+group = "."
+deprecated = false

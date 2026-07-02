@@ -1,0 +1,9 @@
+[package]
+name = "dietrichgebert-ponytail"
+type = "github"
+
+[github]
+url = "https://github.com/DietrichGebert/ponytail"
+branch = "main"
+skills_path = "skills"
+last_imported_commit = "45f7d2f83fb430a65fd512a98ad7b14d79e06636"

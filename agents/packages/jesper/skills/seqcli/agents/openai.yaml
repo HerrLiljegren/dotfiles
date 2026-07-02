@@ -1,0 +1,4 @@
+interface:
+  display_name: "Seq CLI"
+  short_description: "Operate Seq with seqcli safely"
+  default_prompt: "Use $seqcli to query, ingest, or configure logs in Seq from the command line."
