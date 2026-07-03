@@ -1,0 +1,130 @@
+onboarding = false
+
+[experimental]
+pane_history = true
+
+[keys]
+prefix = "ctrl+space"
+split_horizontal = "prefix+s"
+split_vertical = "prefix+v"
+settings = "prefix+shift+s"
+copy_mode = "prefix+["
+reload_config = "prefix+shift+r"
+new_tab = "prefix+c"
+rename_tab = "prefix+comma"
+switch_tab = "alt+1..9"
+last_pane = "prefix+shift+l"
+zoom = "prefix+z"
+
+[[keys.command]]
+key = "alt+h"
+type = "plugin_action"
+command = "herdr-splits.nav-left"
+description = "Navigate left (Nvim / Herdr)"
+
+[[keys.command]]
+key = "alt+left"
+type = "plugin_action"
+command = "herdr-splits.nav-left"
+description = "Navigate left (Nvim / Herdr)"
+
+[[keys.command]]
+key = "alt+j"
+type = "plugin_action"
+command = "herdr-splits.nav-down"
+description = "Navigate down (Nvim / Herdr)"
+
+[[keys.command]]
+key = "alt+down"
+type = "plugin_action"
+command = "herdr-splits.nav-down"
+description = "Navigate down (Nvim / Herdr)"
+
+[[keys.command]]
+key = "alt+k"
+type = "plugin_action"
+command = "herdr-splits.nav-up"
+description = "Navigate up (Nvim / Herdr)"
+
+[[keys.command]]
+key = "alt+up"
+type = "plugin_action"
+command = "herdr-splits.nav-up"
+description = "Navigate up (Nvim / Herdr)"
+
+[[keys.command]]
+key = "alt+l"
+type = "plugin_action"
+command = "herdr-splits.nav-right"
+description = "Navigate right (Nvim / Herdr)"
+
+[[keys.command]]
+key = "alt+right"
+type = "plugin_action"
+command = "herdr-splits.nav-right"
+description = "Navigate right (Nvim / Herdr)"
+
+[[keys.command]]
+key = "alt+shift+h"
+type = "plugin_action"
+command = "herdr-splits.resize-left"
+description = "Resize left (Nvim / Herdr)"
+
+[[keys.command]]
+key = "alt+shift+left"
+type = "plugin_action"
+command = "herdr-splits.resize-left"
+description = "Resize left (Nvim / Herdr)"
+
+[[keys.command]]
+key = "alt+shift+j"
+type = "plugin_action"
+command = "herdr-splits.resize-down"
+description = "Resize down (Nvim / Herdr)"
+
+[[keys.command]]
+key = "alt+shift+down"
+type = "plugin_action"
+command = "herdr-splits.resize-down"
+description = "Resize down (Nvim / Herdr)"
+
+[[keys.command]]
+key = "alt+shift+k"
+type = "plugin_action"
+command = "herdr-splits.resize-up"
+description = "Resize up (Nvim / Herdr)"
+
+[[keys.command]]
+key = "alt+shift+up"
+type = "plugin_action"
+command = "herdr-splits.resize-up"
+description = "Resize up (Nvim / Herdr)"
+
+[[keys.command]]
+key = "alt+shift+l"
+type = "plugin_action"
+command = "herdr-splits.resize-right"
+description = "Resize right (Nvim / Herdr)"
+
+[[keys.command]]
+key = "alt+shift+right"
+type = "plugin_action"
+command = "herdr-splits.resize-right"
+description = "Resize right (Nvim / Herdr)"
+
+# Override herdr's built-in "new worktree" key (prefix+shift+g) with worktrunk's
+# switch/create picker:
+[[keys.command]]
+key = "prefix+shift+g"
+type = "plugin_action"
+command = "worktrunk.open"
+description = "Worktree: switch / create"
+
+[[keys.command]]
+key = "prefix+shift+d"
+type = "plugin_action"
+command = "worktrunk.remove"
+description = "Worktree: remove"
+
+[ui]
+show_agent_labels_on_pane_borders = false

@@ -44,8 +44,6 @@ Output contract:
 - Add a final footer only when Azure DevOps Boards work item IDs are clearly known.
 - Prefer IDs from the branch name, explicit guidance, or existing commit footer patterns.
 - Do not infer work item IDs from unrelated numbers in the diff.
-- Use `Refs #5034` for one work item.
-- Use `Refs #5034, #6120` for multiple clearly relevant work items.
 - Do not use Markdown links; Azure DevOps will auto-link `#<digits>`.
 - Put the footer after a blank line; preserve any body bullets above it.
 </format>
@@ -116,8 +114,6 @@ Output contract:
 - Add a final footer only when Azure DevOps Boards work item IDs are clearly known.
 - Prefer IDs from the branch name, explicit guidance, or existing commit footer patterns.
 - Do not infer work item IDs from unrelated numbers in the diff.
-- Use `Refs #5034` for one work item.
-- Use `Refs #5034, #6120` for multiple clearly relevant work items.
 - Do not use Markdown links; Azure DevOps will auto-link `#<digits>`.
 - Put the footer after a blank line; preserve any body bullets above it.
 </format>

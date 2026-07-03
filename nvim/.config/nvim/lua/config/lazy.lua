@@ -22,6 +22,9 @@ require("lazy").setup({
     -- Language extras.
     { import = "lazyvim.plugins.extras.lang.dotnet" },
 
+    -- AI extras.
+    { import = "lazyvim.plugins.extras.ai.copilot" },
+
     -- Import local customizations from lua/plugins/*.lua.
     { import = "plugins" },
   },
