@@ -5,3 +5,5 @@ wallpapers/
 forge/*.log
 /docs
 /scripts/.local/bin
+/zsh/.config/zsh/.zcompdump
+/zsh/.config/zsh/.zsh_plugins.zsh
