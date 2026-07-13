@@ -19,7 +19,20 @@ export LESS="${LESS:--FRX}"
 export FZF_DEFAULT_OPTS="${FZF_DEFAULT_OPTS:---height=40% --layout=reverse --border}"
 
 alias ll='ls -alF'
+
+if command -v eza >/dev/null 2>&1; then
+  alias l='eza -lh --icons --git --group-directories-first'
+  alias ll='eza -lah --icons --git --group-directories-first'
+  alias lt='eza --tree --level=4 --git-ignore --icons'
+  alias lta='eza --tree --level=4 --all --icons --group-directories-first'
+fi
 alias gs='git status --short --branch'
 alias gd='git diff'
 alias gl='git log --oneline --decorate --graph -20'
+
+DOTFILES_LOCAL_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles/local.sh"
+if [ -r "$DOTFILES_LOCAL_CONFIG" ]; then
+  . "$DOTFILES_LOCAL_CONFIG"
+fi
+unset DOTFILES_LOCAL_CONFIG
 

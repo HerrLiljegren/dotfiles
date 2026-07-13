@@ -91,18 +91,39 @@ ensure_block() {
   log "updated $destination"
 }
 
+configure_bat_cache() {
+  local theme="$ROOT/config/bat/themes/Catppuccin Mocha.tmTheme"
+  local cache_home="${XDG_CACHE_HOME:-$HOME/.cache}"
+  local marker="$cache_home/bat/.dotfiles-theme.sha256"
+  local expected=''
+  local current=''
+
+  command -v bat >/dev/null 2>&1 || return 0
+  command -v sha256sum >/dev/null 2>&1 || return 0
+
+  expected="$(sha256sum "$theme" | awk '{ print $1 }')"
+  [[ -f "$marker" ]] && current="$(<"$marker")"
+  [[ "$current" == "$expected" ]] && return
+
+  bat cache --build >/dev/null
+  mkdir -p -- "$(dirname -- "$marker")"
+  printf '%s\n' "$expected" >"$marker"
+  log 'rebuilt Bat theme cache'
+}
+
 link_path "$ROOT/config/bat/config" "$XDG_CONFIG_HOME/bat/config"
+link_path "$ROOT/config/bat/themes/Catppuccin Mocha.tmTheme" "$XDG_CONFIG_HOME/bat/themes/Catppuccin Mocha.tmTheme"
 link_path "$ROOT/config/delta/config.gitconfig" "$XDG_CONFIG_HOME/delta/config.gitconfig"
 link_path "$ROOT/config/glow/glow.yml" "$XDG_CONFIG_HOME/glow/glow.yml"
 link_path "$ROOT/config/herdr/config.toml" "$XDG_CONFIG_HOME/herdr/config.toml"
 link_path "$ROOT/config/nvim" "$XDG_CONFIG_HOME/nvim"
 link_path "$ROOT/config/starship.toml" "$XDG_CONFIG_HOME/starship.toml"
-link_path "$ROOT/config/tmux/tmux.conf" "$XDG_CONFIG_HOME/tmux/tmux.conf"
 link_path "$ROOT/config/worktrunk/config.toml" "$XDG_CONFIG_HOME/worktrunk/config.toml"
 link_path "$ROOT/git/ignore" "$XDG_CONFIG_HOME/git/ignore"
 link_path "$ROOT/agents/codex/config.toml" "$HOME/.codex/config.toml"
 link_path "$ROOT/agents/codex/AGENTS.md" "$HOME/.codex/AGENTS.md"
 
+configure_bat_cache
 ensure_block \
   "$HOME/.bashrc" \
   'bash' \

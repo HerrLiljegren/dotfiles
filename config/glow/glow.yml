@@ -1,4 +1,5 @@
-style: dark
+style: auto
+mouse: true
 pager: true
-width: 100
+all: false
 

@@ -1,0 +1,1 @@
+-- Add shared autocommands here when they are needed.

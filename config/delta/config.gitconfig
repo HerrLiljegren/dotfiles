@@ -6,6 +6,8 @@
 
 [delta]
     dark = true
+    hyperlinks = true
+    hyperlinks-file-link-format = "file://{path}"
     line-numbers = true
     navigate = true
     side-by-side = false

@@ -6,7 +6,6 @@ tools=(
   zsh
   git
   nvim
-  tmux
   starship
   delta
   fzf

@@ -16,7 +16,7 @@ devcontainers. The repository configures tools but never installs them.
 
 - Bash and Zsh integration
 - Git behavior and global ignore patterns
-- Bat, Delta, Glow, Starship, Neovim, and tmux
+- Bat, Delta, Glow, Starship, and Neovim
 - Worktrunk and Herdr
 - Credential-free Codex defaults and global working agreements
 

@@ -7,3 +7,5 @@ summary = true
 [switch]
 cd = true
 
+[aliases]
+new = "wt switch --create --no-cd {{ args }}"

@@ -22,7 +22,7 @@
 
 [diff]
     algorithm = histogram
-    colorMoved = default
+    colorMoved = zebra
 
 [merge]
     conflictStyle = zdiff3
@@ -35,5 +35,7 @@
     path = ~/.config/delta/config.gitconfig
 
 [core]
+    editor = nvim
+    autocrlf = input
     excludesFile = ~/.config/git/ignore
 

@@ -1,3 +1,4 @@
+--theme="Catppuccin Mocha"
 --paging=auto
 --style=numbers,changes,header
 
