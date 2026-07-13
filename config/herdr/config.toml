@@ -1,0 +1,11 @@
+onboarding = false
+
+[experimental]
+pane_history = true
+
+[keys]
+prefix = "ctrl+space"
+
+[ui]
+show_agent_labels_on_pane_borders = false
+

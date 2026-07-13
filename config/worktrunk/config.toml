@@ -1,0 +1,9 @@
+# Keep worktrees inside their repository so the configuration is portable.
+worktree-path = "{{ repo_path }}/.worktrees/{{ branch | sanitize }}"
+
+[list]
+summary = true
+
+[switch]
+cd = true
+

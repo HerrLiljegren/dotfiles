@@ -1,0 +1,39 @@
+[init]
+    defaultBranch = main
+
+[pull]
+    rebase = true
+
+[rebase]
+    autoStash = true
+    updateRefs = true
+
+[push]
+    default = simple
+    autoSetupRemote = true
+
+[fetch]
+    prune = true
+    pruneTags = true
+
+[rerere]
+    enabled = true
+    autoUpdate = true
+
+[diff]
+    algorithm = histogram
+    colorMoved = default
+
+[merge]
+    conflictStyle = zdiff3
+
+[alias]
+    amend = commit --amend --no-edit
+    lg = log --graph --decorate --oneline --all
+
+[include]
+    path = ~/.config/delta/config.gitconfig
+
+[core]
+    excludesFile = ~/.config/git/ignore
+

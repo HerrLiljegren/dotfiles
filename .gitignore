@@ -1,0 +1,25 @@
+.DS_Store
+Thumbs.db
+*~
+*.bak
+*.log
+*.py[cod]
+__pycache__/
+
+# Local environment and credential material
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+**/auth.json
+**/hosts.yml
+**/sessions/
+**/*.jsonl
+
+# Generated tool state
+**/.cache/
+**/config.toml.lock
+

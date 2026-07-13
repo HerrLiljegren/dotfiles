@@ -1,0 +1,5 @@
+# Shared, credential-free Codex defaults.
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+web_search = "cached"
+
