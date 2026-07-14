@@ -1,9 +1,12 @@
 # Shared interactive shell configuration for Bash and Zsh.
 
-case ":$PATH:" in
-  *":$HOME/.local/bin:"*) ;;
-  *) PATH="$HOME/.local/bin:$PATH" ;;
-esac
+for bin_dir in "$HOME/.local/bin" "$HOME/.devcontainers/bin"; do
+  case ":$PATH:" in
+    *":$bin_dir:"*) ;;
+    *) PATH="$bin_dir:$PATH" ;;
+  esac
+done
+unset bin_dir
 export PATH
 
 if command -v nvim >/dev/null 2>&1; then
