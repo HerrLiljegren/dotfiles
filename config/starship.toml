@@ -59,7 +59,7 @@ format = "[ $path]($style) "
 [git_branch]
 symbol = " "
 style = "bold mauve"
-format = "[$symbol$branch]($style) "
+format = "[$symbol$branch]($style)"
 
 [git_commit]
 commit_hash_length = 7
@@ -67,15 +67,15 @@ only_detached = true
 tag_disabled = false
 tag_symbol = " 󰓹 "
 style = "bold mauve"
-format = "[$hash$tag]($style) "
+format = "[ $hash$tag]($style)"
 
 [git_state]
 style = "bold peach"
-format = "[$state( $progress_current/$progress_total)]($style) "
+format = "[ $state( $progress_current/$progress_total)]($style)"
 
 [git_status]
 style = "bold yellow"
-format = "([$all_status$ahead_behind]($style) )"
+format = "([ $all_status$ahead_behind]($style))"
 conflicted = "="
 ahead = "⇡${count}"
 behind = "⇣${count}"
