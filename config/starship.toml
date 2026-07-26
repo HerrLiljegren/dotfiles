@@ -2,7 +2,7 @@
 add_newline = true
 palette = "catppuccin_mocha"
 format = """
-[╭─](overlay0)${env_var.SSH_CONNECTION}$username$hostname${env_var.WORKBENCH_STATE_DIR}$directory$git_branch$git_commit$git_state$git_status$dotnet$docker_context
+[╭─](overlay0)$username$hostname${env_var.WORKBENCH_STATE_DIR}$directory$git_branch$git_commit$git_state$git_status$dotnet$docker_context
 [╰─](overlay0)$character
 """
 right_format = "$cmd_duration$jobs"
@@ -40,20 +40,15 @@ success_symbol = "[➜](bold green)"
 error_symbol = "[✗](bold red)"
 
 [username]
-show_always = true
+show_always = false
 style_user = "bold lavender"
 style_root = "bold red"
-format = "[$user]($style)"
+format = "[ $user]($style)"
 
 [hostname]
 ssh_only = true
 style = "bold teal"
 format = "[@$hostname]($style)"
-
-[env_var.SSH_CONNECTION]
-symbol = "󰢹 "
-style = "bold sky"
-format = "[ $symbol]($style)"
 
 [directory]
 truncation_length = 3
@@ -66,6 +61,14 @@ symbol = " "
 style = "bold mauve"
 format = "[$symbol$branch]($style) "
 
+[git_commit]
+commit_hash_length = 7
+only_detached = true
+tag_disabled = false
+tag_symbol = " 󰓹 "
+style = "bold mauve"
+format = "[$hash$tag]($style) "
+
 [git_state]
 style = "bold peach"
 format = "[$state( $progress_current/$progress_total)]($style) "
@@ -76,7 +79,7 @@ format = "([$all_status$ahead_behind]($style) )"
 conflicted = "="
 ahead = "⇡${count}"
 behind = "⇣${count}"
-diverged = "⇕⇡${ahead_count}⇣${behind_count}"
+diverged = "⇡${ahead_count}⇣${behind_count}"
 untracked = "?${count}"
 stashed = "*${count}"
 modified = "!${count}"
