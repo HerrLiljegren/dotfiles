@@ -2,7 +2,7 @@
 add_newline = true
 palette = "catppuccin_mocha"
 format = """
-[╭─](overlay0)$username$hostname${env_var.WORKBENCH_STATE_DIR}$directory$git_branch$git_commit$git_state$git_status$dotnet$docker_context
+[╭─](overlay0)${env_var.SSH_CONNECTION}$username$hostname${env_var.WORKBENCH_STATE_DIR}$directory$git_branch$git_commit$git_state$git_status$dotnet$docker_context
 [╰─](overlay0)$character
 """
 right_format = "$cmd_duration$jobs"
@@ -43,13 +43,17 @@ error_symbol = "[✗](bold red)"
 show_always = true
 style_user = "bold lavender"
 style_root = "bold red"
-format = "[󰀄 $user]($style)"
+format = "[$user]($style)"
 
 [hostname]
 ssh_only = true
-ssh_symbol = "󰒋 "
 style = "bold teal"
-format = "[$ssh_symbol$hostname]($style) "
+format = "[@$hostname]($style)"
+
+[env_var.SSH_CONNECTION]
+symbol = "󰢹 "
+style = "bold sky"
+format = "[ $symbol]($style)"
 
 [directory]
 truncation_length = 3
@@ -96,7 +100,7 @@ only_with_files = true
 [env_var.WORKBENCH_STATE_DIR]
 symbol = "󰡨"
 style = "bold sky"
-format = "[$symbol]($style) "
+format = "[ $symbol]($style)"
 description = "Workbench devcontainer"
 
 [cmd_duration]
