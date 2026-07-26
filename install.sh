@@ -116,11 +116,11 @@ link_path "$ROOT/config/bat/themes/Catppuccin Mocha.tmTheme" "$XDG_CONFIG_HOME/b
 link_path "$ROOT/config/delta/config.gitconfig" "$XDG_CONFIG_HOME/delta/config.gitconfig"
 link_path "$ROOT/config/glow/glow.yml" "$XDG_CONFIG_HOME/glow/glow.yml"
 link_path "$ROOT/config/herdr/config.toml" "$XDG_CONFIG_HOME/herdr/config.toml"
+link_path "$ROOT/config/hunk/config.toml" "$XDG_CONFIG_HOME/hunk/config.toml"
 link_path "$ROOT/config/nvim" "$XDG_CONFIG_HOME/nvim"
 link_path "$ROOT/config/starship.toml" "$XDG_CONFIG_HOME/starship.toml"
 link_path "$ROOT/config/worktrunk/config.toml" "$XDG_CONFIG_HOME/worktrunk/config.toml"
 link_path "$ROOT/git/ignore" "$XDG_CONFIG_HOME/git/ignore"
-link_path "$ROOT/agents/codex/config.toml" "$HOME/.codex/config.toml"
 link_path "$ROOT/agents/codex/AGENTS.md" "$HOME/.codex/AGENTS.md"
 
 configure_bat_cache
@@ -141,4 +141,3 @@ ensure_block \
     path = \"$ROOT/git/config\""
 
 log 'installation complete'
-

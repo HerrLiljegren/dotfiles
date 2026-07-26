@@ -16,9 +16,9 @@ devcontainers. The repository configures tools but never installs them.
 
 - Bash and Zsh integration
 - Git behavior and global ignore patterns
-- Bat, Delta, Glow, Starship, and Neovim
+- Bat, Delta, Glow, Hunk, Starship, and Neovim
 - Worktrunk and Herdr
-- Credential-free Codex defaults and global working agreements
+- Global Codex working agreements
 
 No profile system is used. The public configuration is the shared team
 configuration.
@@ -88,4 +88,3 @@ Never commit credentials, authentication state, SSH material, private hosts,
 employer details, session history, generated conversations, or machine
 identifiers. Authentication remains the responsibility of the host,
 devcontainer, or an external secret manager.
-

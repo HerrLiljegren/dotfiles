@@ -17,10 +17,12 @@ fail() {
 }
 
 mkdir -p -- "$TEST_HOME/.config"
+mkdir -p -- "$TEST_HOME/.codex"
 printf '# existing bash config\n' >"$TEST_HOME/.bashrc"
 printf '# existing zsh config\n' >"$TEST_HOME/.zshrc"
 printf '[credential]\n    helper = existing-helper\n' >"$TEST_HOME/.gitconfig"
 printf 'existing starship config\n' >"$TEST_HOME/.config/starship.toml"
+printf 'model = "existing-model"\n' >"$TEST_HOME/.codex/config.toml"
 
 before_status="$(git -C "$ROOT" status --porcelain=v1)"
 
@@ -30,10 +32,13 @@ XDG_CONFIG_HOME="$TEST_HOME/.config" \
 
 [[ -L "$TEST_HOME/.config/starship.toml" ]] || fail 'starship config was not linked'
 [[ -f "$TEST_HOME/.config/starship.toml.pre-dotfiles" ]] || fail 'existing config was not backed up'
-[[ -L "$TEST_HOME/.codex/config.toml" ]] || fail 'Codex config was not linked'
+[[ ! -L "$TEST_HOME/.codex/config.toml" ]] || fail 'Codex config was replaced with a symlink'
+grep -Fq 'existing-model' "$TEST_HOME/.codex/config.toml" || fail 'Codex config was modified'
+[[ -L "$TEST_HOME/.codex/AGENTS.md" ]] || fail 'Codex guidance was not linked'
 [[ -L "$TEST_HOME/.config/git/ignore" ]] || fail 'global Git ignore was not linked'
 [[ -L "$TEST_HOME/.config/worktrunk/config.toml" ]] || fail 'Worktrunk config was not linked'
 [[ -L "$TEST_HOME/.config/herdr/config.toml" ]] || fail 'Herdr config was not linked'
+[[ -L "$TEST_HOME/.config/hunk/config.toml" ]] || fail 'Hunk config was not linked'
 [[ "$(grep -Fc '# >>> dotfiles:bash >>>' "$TEST_HOME/.bashrc")" == 1 ]] || fail 'bash block count is not one'
 [[ "$(grep -Fc '# >>> dotfiles:zsh >>>' "$TEST_HOME/.zshrc")" == 1 ]] || fail 'zsh block count is not one'
 [[ "$(grep -Fc '# >>> dotfiles:git >>>' "$TEST_HOME/.gitconfig")" == 1 ]] || fail 'git block count is not one'
@@ -63,4 +68,3 @@ if grep -Fq '# >>> dotfiles:' "$TEST_HOME/.bashrc" "$TEST_HOME/.zshrc" "$TEST_HO
 fi
 
 printf 'install, idempotency, and uninstall tests passed\n'
-

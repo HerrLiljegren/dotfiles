@@ -7,4 +7,4 @@ Thumbs.db
 *.swo
 .idea/
 *.old
-
+.claude/settings.local.json

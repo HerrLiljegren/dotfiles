@@ -55,11 +55,11 @@ unlink_path "$ROOT/config/bat/config" "$XDG_CONFIG_HOME/bat/config"
 unlink_path "$ROOT/config/delta/config.gitconfig" "$XDG_CONFIG_HOME/delta/config.gitconfig"
 unlink_path "$ROOT/config/glow/glow.yml" "$XDG_CONFIG_HOME/glow/glow.yml"
 unlink_path "$ROOT/config/herdr/config.toml" "$XDG_CONFIG_HOME/herdr/config.toml"
+unlink_path "$ROOT/config/hunk/config.toml" "$XDG_CONFIG_HOME/hunk/config.toml"
 unlink_path "$ROOT/config/nvim" "$XDG_CONFIG_HOME/nvim"
 unlink_path "$ROOT/config/starship.toml" "$XDG_CONFIG_HOME/starship.toml"
 unlink_path "$ROOT/config/worktrunk/config.toml" "$XDG_CONFIG_HOME/worktrunk/config.toml"
 unlink_path "$ROOT/git/ignore" "$XDG_CONFIG_HOME/git/ignore"
-unlink_path "$ROOT/agents/codex/config.toml" "$HOME/.codex/config.toml"
 unlink_path "$ROOT/agents/codex/AGENTS.md" "$HOME/.codex/AGENTS.md"
 
 remove_block "$HOME/.bashrc" 'bash'
@@ -67,4 +67,3 @@ remove_block "$HOME/.zshrc" 'zsh'
 remove_block "$HOME/.gitconfig" 'git'
 
 log 'uninstall complete'
-

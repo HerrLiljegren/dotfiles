@@ -1,6 +1,6 @@
 # Shared interactive shell configuration for Bash and Zsh.
 
-for bin_dir in "$HOME/.local/bin" "$HOME/.devcontainers/bin"; do
+for bin_dir in "$HOME/.local/bin" "$HOME/.devcontainers/bin" "$HOME/.cargo/bin"; do
   case ":$PATH:" in
     *":$bin_dir:"*) ;;
     *) PATH="$bin_dir:$PATH" ;;
@@ -110,6 +110,14 @@ fi
 
 if command -v lazygit >/dev/null 2>&1; then
   alias lg='lazygit' # Open Lazygit.
+fi
+
+if command -v opencode >/dev/null 2>&1; then
+  alias oc='opencode' # Open OpenCode.
+fi
+
+if command -v btop >/dev/null 2>&1; then
+  alias top='btop' # Use the enhanced process monitor.
 fi
 
 if command -v bat >/dev/null 2>&1; then

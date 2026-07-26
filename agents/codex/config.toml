@@ -1,9 +1,0 @@
-# Shared, credential-free Codex defaults.
-web_search = "cached"
-approvals_reviewer = "user"
-
-[tui.model_availability_nux]
-"gpt-5.6-sol" = 2
-
-[notice]
-hide_full_access_warning = true

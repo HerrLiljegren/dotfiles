@@ -2,9 +2,10 @@
 add_newline = true
 palette = "catppuccin_mocha"
 format = """
-[╭─](blue)$directory$git_branch$git_status$dotnet$docker_context
-[╰─](blue)$character
+[╭─](overlay0)${env_var.WORKBENCH_STATE_DIR}$directory$git_branch$git_commit$git_state$git_status$dotnet$docker_context
+[╰─](overlay0)$character
 """
+right_format = "$cmd_duration$jobs"
 
 [palettes.catppuccin_mocha]
 rosewater = "#f5e0dc"
@@ -45,9 +46,13 @@ style = "bold blue"
 format = "[ $path]($style) "
 
 [git_branch]
-symbol = ""
+symbol = " "
 style = "bold mauve"
-format = "[$branch]($style) "
+format = "[$symbol$branch]($style) "
+
+[git_state]
+style = "bold peach"
+format = "[$state( $progress_current/$progress_total)]($style) "
 
 [git_status]
 style = "bold yellow"
@@ -64,15 +69,29 @@ renamed = "»${count}"
 deleted = "x${count}"
 
 [dotnet]
-symbol = ".NET "
+symbol = " "
 style = "blue"
 format = "[$symbol$version]($style) "
-detect_extensions = ["sln", "csproj", "fsproj", "xproj"]
+detect_extensions = ["sln", "slnx", "csproj", "fsproj", "xproj"]
 detect_files = ["global.json", "Directory.Build.props"]
 
 [docker_context]
-symbol = "Docker "
+symbol = " "
 style = "overlay1"
 format = "[$symbol$context]($style) "
 only_with_files = true
 
+[env_var.WORKBENCH_STATE_DIR]
+symbol = "󰡨"
+style = "bold sky"
+format = "[$symbol]($style) "
+description = "Workbench devcontainer"
+
+[cmd_duration]
+min_time = 2000
+style = "yellow"
+format = "[$duration]($style) "
+
+[jobs]
+symbol = "󰜎 "
+style = "bold sapphire"

@@ -12,6 +12,7 @@ tools=(
   zoxide
   bat
   glow
+  hunk
   wt
   herdr
   codex
@@ -34,4 +35,3 @@ if ((missing)); then
 fi
 
 printf '\nAll configured tools are available.\n'
-
