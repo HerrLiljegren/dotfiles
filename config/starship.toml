@@ -2,7 +2,7 @@
 add_newline = true
 palette = "catppuccin_mocha"
 format = """
-[╭─](overlay0)${env_var.WORKBENCH_STATE_DIR}$directory$git_branch$git_commit$git_state$git_status$dotnet$docker_context
+[╭─](overlay0)$username$hostname${env_var.WORKBENCH_STATE_DIR}$directory$git_branch$git_commit$git_state$git_status$dotnet$docker_context
 [╰─](overlay0)$character
 """
 right_format = "$cmd_duration$jobs"
@@ -38,6 +38,18 @@ crust = "#11111b"
 [character]
 success_symbol = "[➜](bold green)"
 error_symbol = "[✗](bold red)"
+
+[username]
+show_always = true
+style_user = "bold lavender"
+style_root = "bold red"
+format = "[󰀄 $user]($style)"
+
+[hostname]
+ssh_only = true
+ssh_symbol = "󰒋 "
+style = "bold teal"
+format = "[$ssh_symbol$hostname]($style) "
 
 [directory]
 truncation_length = 3
