@@ -60,7 +60,12 @@ unlink_path "$ROOT/config/nvim" "$XDG_CONFIG_HOME/nvim"
 unlink_path "$ROOT/config/starship.toml" "$XDG_CONFIG_HOME/starship.toml"
 unlink_path "$ROOT/config/worktrunk/config.toml" "$XDG_CONFIG_HOME/worktrunk/config.toml"
 unlink_path "$ROOT/git/ignore" "$XDG_CONFIG_HOME/git/ignore"
-unlink_path "$ROOT/agents/codex/AGENTS.md" "$HOME/.codex/AGENTS.md"
+unlink_path "$ROOT/agents/AGENTS.md" "$HOME/.agents/AGENTS.md"
+unlink_path "$ROOT/agents/AGENTS.md" "$HOME/.codex/AGENTS.md"
+unlink_path "$ROOT/agents/AGENTS.md" "$HOME/.claude/CLAUDE.md"
+unlink_path "$ROOT/agents/AGENTS.md" "$HOME/.pi/agent/AGENTS.md"
+unlink_path "$ROOT/agents/AGENTS.md" "$XDG_CONFIG_HOME/opencode/AGENTS.md"
+unlink_path "$ROOT/agents/AGENTS.md" "$HOME/.copilot/copilot-instructions.md"
 
 remove_block "$HOME/.bashrc" 'bash'
 remove_block "$HOME/.zshrc" 'zsh'

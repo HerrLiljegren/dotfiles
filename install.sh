@@ -18,6 +18,7 @@ die() {
 link_path() {
   local source=$1
   local destination=$2
+  local legacy_source=${3:-}
   local backup="${destination}${BACKUP_SUFFIX}"
 
   [[ -e "$source" || -L "$source" ]] || die "missing source: $source"
@@ -25,6 +26,15 @@ link_path() {
 
   if [[ -L "$destination" ]] && [[ "$(readlink -- "$destination")" == "$source" ]]; then
     log "unchanged $destination"
+    return
+  fi
+
+  if [[ -n "$legacy_source" ]] &&
+    [[ -L "$destination" ]] &&
+    [[ "$(readlink -- "$destination")" == "$legacy_source" ]]
+  then
+    ln -sfn -- "$source" "$destination"
+    log "migrated $destination"
     return
   fi
 
@@ -121,7 +131,15 @@ link_path "$ROOT/config/nvim" "$XDG_CONFIG_HOME/nvim"
 link_path "$ROOT/config/starship.toml" "$XDG_CONFIG_HOME/starship.toml"
 link_path "$ROOT/config/worktrunk/config.toml" "$XDG_CONFIG_HOME/worktrunk/config.toml"
 link_path "$ROOT/git/ignore" "$XDG_CONFIG_HOME/git/ignore"
-link_path "$ROOT/agents/codex/AGENTS.md" "$HOME/.codex/AGENTS.md"
+link_path "$ROOT/agents/AGENTS.md" "$HOME/.agents/AGENTS.md"
+link_path \
+  "$ROOT/agents/AGENTS.md" \
+  "$HOME/.codex/AGENTS.md" \
+  "$ROOT/agents/codex/AGENTS.md"
+link_path "$ROOT/agents/AGENTS.md" "$HOME/.claude/CLAUDE.md"
+link_path "$ROOT/agents/AGENTS.md" "$HOME/.pi/agent/AGENTS.md"
+link_path "$ROOT/agents/AGENTS.md" "$XDG_CONFIG_HOME/opencode/AGENTS.md"
+link_path "$ROOT/agents/AGENTS.md" "$HOME/.copilot/copilot-instructions.md"
 
 configure_bat_cache
 ensure_block \
