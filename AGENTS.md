@@ -12,7 +12,7 @@ WSL, and Linux-based devcontainers.
 - Keep `install.sh` dependency-free beyond Bash and standard Linux utilities.
 - Do not install applications or project runtimes from this repository.
 - Preserve existing user configuration and Git credential helpers.
+- Never set or unset `ZDOTDIR`; callers such as VS Code own it during startup.
 - Run `bash tests/install.sh` after changing installation behavior or managed
   paths.
 - Prefer explicit file mappings over recursive discovery or a profile system.
-

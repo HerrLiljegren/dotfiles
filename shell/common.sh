@@ -21,6 +21,18 @@ export PAGER="${PAGER:-less}"
 export LESS="${LESS:--FRX}"
 export FZF_DEFAULT_OPTS="${FZF_DEFAULT_OPTS:---height=40% --layout=reverse --border}"
 
+# Let OpenSSL-based tools discover the per-user .NET development certificate.
+dotnet_trust_dir="$HOME/.aspnet/dev-certs/trust"
+if [ -d "$dotnet_trust_dir" ]; then
+  SSL_CERT_DIR="${SSL_CERT_DIR:-/etc/ssl/certs}"
+  case ":$SSL_CERT_DIR:" in
+    *":$dotnet_trust_dir:"*) ;;
+    *) SSL_CERT_DIR="$dotnet_trust_dir:$SSL_CERT_DIR" ;;
+  esac
+  export SSL_CERT_DIR
+fi
+unset dotnet_trust_dir
+
 # Directory navigation and listing.
 alias ..='cd ..'             # Move up one directory.
 alias ...='cd ../..'         # Move up two directories.

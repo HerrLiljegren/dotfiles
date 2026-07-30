@@ -7,7 +7,7 @@ devcontainers. The repository configures tools but never installs them.
 
 - A Dev Container Feature installs CLI tools and their system dependencies.
 - The devcontainer setup owns shared VS Code settings and extensions.
-- This repository configures the shared terminal development experience.
+- This repository owns the complete, shared terminal development experience.
 - A separate private workstation repository owns host packages, Ghostty,
   Windows Terminal, local VS Code preferences, identity, work details, and
   machine-specific setup.
@@ -15,6 +15,7 @@ devcontainers. The repository configures tools but never installs them.
 ## Managed configuration
 
 - Bash and Zsh integration
+- Shared Zsh history, fzf completion, autosuggestions, and syntax highlighting
 - Git behavior and global ignore patterns
 - Bat, Delta, Glow, Hunk, Starship, and Neovim
 - Worktrunk and Herdr
@@ -40,6 +41,32 @@ stops rather than overwriting either file.
 The installer preserves existing `.bashrc`, `.zshrc`, `.gitconfig`, and Git
 credential helpers. It adds clearly marked source/include blocks instead of
 replacing those files.
+
+### Personal configuration
+
+The public shell is fully usable without a personal layer. A private
+workstation repository may add portable Bash/Zsh exports in:
+
+```text
+~/.config/dotfiles/local.sh
+```
+
+Zsh-only options, functions, or bindings belong in:
+
+```text
+~/.config/dotfiles/personal.zsh
+```
+
+Both files are optional and remain outside this repository. Do not set or
+unset `ZDOTDIR` in `.zshenv` or either personal file. VS Code temporarily owns
+that variable while injecting its shell integration.
+
+### Vendored Zsh plugins
+
+Runtime files for autosuggestions, history substring search, syntax
+highlighting, and fzf-tab are pinned under `vendor/zsh`. Shell startup never
+clones or updates plugins. Upstream revisions and retained licenses are
+documented in `vendor/zsh/README.md`.
 
 ## Devcontainer integration
 
@@ -68,9 +95,10 @@ bash tests/install.sh
 ./doctor.sh
 ```
 
-The test installs twice into a temporary home, verifies that the second run
-makes no changes, confirms an existing Git credential helper survives, and
-exercises uninstall and backup restoration.
+The test installs twice into a temporary home, verifies ordinary and VS
+Code-injected Zsh startup, confirms the second install makes no changes,
+preserves an existing Git credential helper, and exercises uninstall and
+backup restoration.
 
 ## Uninstalling
 
