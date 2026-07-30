@@ -20,6 +20,11 @@ type(scope): description
 - Prefer a meaningful scope identifying the affected component.
 - Omit the scope only for a genuinely repository-wide change without one clear
   owner.
+- Use one of `build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`,
+  `revert`, `style`, or `test`.
+- Add `!` before the colon only for a breaking change.
+- Keep the subject under 72 characters with a concise, lowercase, imperative
+  description and no final period.
 - Keep commits atomic. Include directly related tests and documentation with
   the behavior they cover, and do not combine unrelated changes.
 - For simple changes, use only the subject. Add a body only when it provides
