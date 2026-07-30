@@ -22,6 +22,11 @@ type(scope): description
   owner.
 - Keep commits atomic. Include directly related tests and documentation with
   the behavior they cover, and do not combine unrelated changes.
+- For simple changes, use only the subject. Add a body only when it provides
+  important context the subject cannot capture, such as rationale, constraints,
+  or non-obvious consequences. Separate it with a blank line and use either one
+  short paragraph or 1-3 concise bullets, wrapped at 72 characters. Preserve
+  any repository-required trailers.
 
 ## .NET solution and project defaults
 
