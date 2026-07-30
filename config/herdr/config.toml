@@ -2,21 +2,47 @@ onboarding = false
 
 [experimental]
 pane_history = true
+kitty_graphics = true
 
 [keys]
+# Prefix
 prefix = "ctrl+space"
+
+# Panes
 split_horizontal = "prefix+s"
 split_vertical = "prefix+v"
-settings = "prefix+shift+s"
+zoom = "prefix+z"
 copy_mode = "prefix+["
-reload_config = "prefix+shift+r"
+
+# Tabs
 new_tab = "prefix+c"
 rename_tab = "prefix+comma"
 switch_tab = "alt+1..9"
-last_pane = "prefix+shift+l"
-zoom = "prefix+z"
+
+# Herdr
+settings = "prefix+shift+s"
+reload_config = "prefix+shift+r"
 open_notification_target = "prefix+shift+o"
 
+# Workspace history
+[[keys.command]]
+key = "prefix+shift+L"
+type = "plugin_action"
+command = "third774.last-workspace.toggle"
+description = "last workspace"
+
+# File viewing — Herdr File Viewer
+[[keys.command]]              # open in a split beside your work
+key = "prefix+f"
+type = "shell"
+command = "herdr plugin action invoke open-file-viewer --plugin herdr-file-viewer"
+
+[[keys.command]]              # …or in its own tab
+key = "prefix+shift+f"
+type = "shell"
+command = "herdr plugin action invoke open-file-viewer-tab --plugin herdr-file-viewer"
+
+# Pane navigation — Herdr Splits
 [[keys.command]]
 key = "alt+h"
 type = "plugin_action"
@@ -65,6 +91,7 @@ type = "plugin_action"
 command = "herdr-splits.nav-right"
 description = "Navigate right (Nvim / Herdr)"
 
+# Pane resizing — Herdr Splits
 [[keys.command]]
 key = "alt+shift+h"
 type = "plugin_action"
@@ -113,7 +140,8 @@ type = "plugin_action"
 command = "herdr-splits.resize-right"
 description = "Resize right (Nvim / Herdr)"
 
-# Override herdr's built-in "new worktree" key (prefix+shift+g) with worktrunk's
+# Worktrees — Worktrunk
+# Override Herdr's built-in "new worktree" key (prefix+shift+g) with Worktrunk's
 # switch/create picker:
 [[keys.command]]
 key = "prefix+shift+g"
@@ -132,7 +160,7 @@ right_click_passthrough_modifier = "ctrl"
 show_agent_labels_on_pane_borders = true
 
 [ui.toast]
-delivery = "herdr"
+delivery = "system"
 
 [ui.toast.herdr]
 position = "top-right"
