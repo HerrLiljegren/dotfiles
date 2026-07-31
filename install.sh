@@ -5,15 +5,133 @@ ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 : "${HOME:?HOME must be set}"
 XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
 BACKUP_SUFFIX=".pre-dotfiles"
+OPTIONAL_SETUPS=()
+BOLD=''
+RESET=''
+
+if [[ -t 1 && -z "${NO_COLOR:-}" && "${TERM:-dumb}" != 'dumb' ]]; then
+  BOLD=$'\033[1m'
+  RESET=$'\033[0m'
+fi
 
 log() {
   printf 'dotfiles: %s\n' "$*"
+}
+
+section() {
+  printf '\n%s==> %s%s\n' "$BOLD" "$*" "$RESET"
 }
 
 die() {
   printf 'dotfiles: error: %s\n' "$*" >&2
   exit 1
 }
+
+usage() {
+  printf 'usage: install.sh [--with NAME]...\n'
+  printf '\n'
+  printf 'Link the shared dotfiles and optionally run additional setup.\n'
+  printf '\n'
+  printf 'Optional setup names:\n'
+  printf '  all             Run every optional setup.\n'
+  printf '  herdr-plugins   Install or refresh the latest Herdr plugins.\n'
+  printf '  none            Link dotfiles only.\n'
+  printf '\n'
+  printf 'With no arguments, an interactive terminal prompts with all selected by\n'
+  printf 'default. A non-interactive run links dotfiles only.\n'
+}
+
+add_optional_setup() {
+  local requested=$1
+  local existing=''
+
+  case "$requested" in
+    all | herdr-plugins | none) ;;
+    *) die "unknown optional setup: $requested" ;;
+  esac
+
+  for existing in "${OPTIONAL_SETUPS[@]}"; do
+    [[ "$existing" == "$requested" ]] && return
+  done
+
+  OPTIONAL_SETUPS+=("$requested")
+}
+
+normalize_optional_setups() {
+  local setup=''
+
+  if ((${#OPTIONAL_SETUPS[@]} > 1)); then
+    for setup in "${OPTIONAL_SETUPS[@]}"; do
+      if [[ "$setup" == 'all' || "$setup" == 'none' ]]; then
+        die "$setup cannot be combined with another optional setup"
+      fi
+    done
+  fi
+
+  if ((${#OPTIONAL_SETUPS[@]} == 1)); then
+    case "${OPTIONAL_SETUPS[0]}" in
+      all) OPTIONAL_SETUPS=('herdr-plugins') ;;
+      none) OPTIONAL_SETUPS=() ;;
+    esac
+  fi
+}
+
+choose_optional_setup() {
+  local selection=''
+
+  printf '\n%sDotfiles installer%s\n\n' "$BOLD" "$RESET"
+  printf 'Choose what to install:\n\n'
+  printf '  1. Everything (default)\n'
+  printf '     Link dotfiles and run every optional setup.\n\n'
+  printf '     Includes:\n'
+  printf '       - Herdr plugins\n\n'
+  printf '     Requires network access and may run third-party build commands.\n\n'
+  printf '  2. Dotfiles only\n'
+  printf '     Link configuration without downloading or updating plugins.\n\n'
+
+  while true; do
+    printf 'Selection [1]: '
+    IFS= read -r selection || die 'installation cancelled'
+
+    case "$selection" in
+      '' | 1)
+        OPTIONAL_SETUPS=('herdr-plugins')
+        return
+        ;;
+      2)
+        OPTIONAL_SETUPS=()
+        return
+        ;;
+      *)
+        printf 'Please enter 1 or 2.\n\n' >&2
+        ;;
+    esac
+  done
+}
+
+if (($# == 1)) && [[ "$1" == '--help' ]]; then
+  usage
+  exit 0
+elif (($# == 0)) && [[ -t 0 && -t 1 ]]; then
+  choose_optional_setup
+else
+  while (($#)); do
+    [[ "$1" == '--with' ]] || die "unknown argument: $1"
+    (($# >= 2)) || die '--with requires a setup name'
+    add_optional_setup "$2"
+    shift 2
+  done
+
+  normalize_optional_setups
+fi
+
+for optional_setup in "${OPTIONAL_SETUPS[@]}"; do
+  case "$optional_setup" in
+    herdr-plugins)
+      command -v herdr >/dev/null 2>&1 || die 'herdr is required for herdr-plugins'
+      ;;
+  esac
+done
 
 link_path() {
   local source=$1
@@ -121,6 +239,8 @@ configure_bat_cache() {
   log 'rebuilt Bat theme cache'
 }
 
+section 'Dotfiles'
+
 link_path "$ROOT/config/bat/config" "$XDG_CONFIG_HOME/bat/config"
 link_path "$ROOT/config/bat/themes/Catppuccin Mocha.tmTheme" "$XDG_CONFIG_HOME/bat/themes/Catppuccin Mocha.tmTheme"
 link_path "$ROOT/config/delta/config.gitconfig" "$XDG_CONFIG_HOME/delta/config.gitconfig"
@@ -159,4 +279,14 @@ ensure_block \
   "[include]
     path = \"$ROOT/git/config\""
 
+for optional_setup in "${OPTIONAL_SETUPS[@]}"; do
+  case "$optional_setup" in
+    herdr-plugins)
+      section 'Herdr plugins'
+      bash "$ROOT/install/optional/herdr-plugins.sh" "$ROOT/config/herdr/plugins.tsv"
+      ;;
+  esac
+done
+
+section 'Complete'
 log 'installation complete'

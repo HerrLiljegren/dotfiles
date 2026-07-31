@@ -1,7 +1,8 @@
 # Portable development dotfiles
 
 Public, credential-free configuration for Linux, WSL, and Linux-based
-devcontainers. The repository configures tools but never installs them.
+devcontainers. The repository does not install applications or project
+runtimes. Explicit optional setup may install plugins through an existing tool.
 
 ## Ownership boundaries
 
@@ -38,6 +39,24 @@ git clone <repository-url> "${XDG_DATA_HOME:-$HOME/.local/share}/dotfiles"
 be run repeatedly. Existing unmanaged destinations are moved once to a sibling
 with the `.pre-dotfiles` suffix. If that backup already exists, installation
 stops rather than overwriting either file.
+
+When standard input and output are attached to a terminal, the installer asks
+whether to install everything or dotfiles only. Everything is the default and
+includes the latest Herdr plugins. The prompt explains that this requires
+network access and may run third-party build commands.
+
+Non-interactive installation remains configuration-only. Automation can select
+optional setup explicitly:
+
+```bash
+./install.sh --with all
+./install.sh --with herdr-plugins
+./install.sh --with none
+```
+
+`--with` is repeatable for future optional setup. `all` and `none` cannot be
+combined with another selection. Run `./install.sh --help` for the complete
+interface.
 
 The installer preserves existing `.bashrc`, `.zshrc`, `.gitconfig`, and Git
 credential helpers. It adds clearly marked source/include blocks instead of
@@ -77,6 +96,18 @@ The pinned Oh My Zsh Git plugin is retained there as the alias reference.
 Shell startup never clones or updates plugins. Upstream revisions and retained
 licenses are documented in `vendor/zsh/README.md`.
 
+### Herdr plugins
+
+The Herdr configuration depends on the plugins declared in
+`config/herdr/plugins.tsv`. Selecting `herdr-plugins` or `all` runs
+`herdr plugin install <source> --yes` for every declaration. Each invocation
+installs or refreshes the latest upstream version; Herdr owns the resulting
+plugin checkouts and state.
+
+The `herdr-splits.nvim` repository supplies two cooperating parts. Herdr owns
+the `herdr-splits` plugin installed by the optional setup, while Lazy.nvim owns
+the Neovim plugin declared under `config/nvim`.
+
 ## Devcontainer integration
 
 The devcontainer setup should:
@@ -99,7 +130,9 @@ updates.
 ## Verification
 
 ```bash
-bash -n install.sh uninstall.sh doctor.sh tests/install.sh
+bash -n install.sh install/optional/herdr-plugins.sh uninstall.sh doctor.sh
+bash -n tests/install.sh tests/install-options.sh
+bash tests/install-options.sh
 bash tests/git-alias-guide.sh
 zsh tests/git-aliases.zsh
 bash tests/install.sh
