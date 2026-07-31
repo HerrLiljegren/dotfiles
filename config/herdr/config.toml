@@ -159,6 +159,7 @@ description = "Worktree: remove"
 right_click_passthrough_modifier = "ctrl"
 show_agent_labels_on_pane_borders = true
 
+agent_panel_sort = "priority"
 [ui.toast]
 delivery = "system"
 
