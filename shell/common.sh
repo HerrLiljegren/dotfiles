@@ -48,52 +48,9 @@ if command -v eza >/dev/null 2>&1; then
   alias lta='eza --tree --level=4 --all --icons --group-directories-first' # Tree including hidden files.
 fi
 
-# Git basics and staging.
-alias g='git'                          # Run Git.
-alias ga='git add'                     # Stage paths.
-alias gaa='git add --all'              # Stage all changes.
-alias gapa='git add --patch'           # Interactively stage parts of changes.
-alias gs='git status --short --branch' # Show compact status and branch information.
-alias gss='git status --short'         # Show compact status.
-alias gst='git status'                 # Show full status.
-alias gd='git diff'                    # Show unstaged changes.
-alias gds='git diff --staged'          # Show staged changes.
-
-# Git branches and history.
-alias gb='git branch'                                  # List or manage local branches.
-alias gba='git branch --all'                           # List local and remote branches.
-alias gsw='git switch'                                 # Switch branches.
-alias gswc='git switch --create'                       # Create and switch to a branch.
-alias gsh='git show'                                   # Show a commit or object.
-alias glo='git log --oneline --decorate'               # Show compact history.
-alias glog='git log --oneline --decorate --graph'      # Show compact graph history.
-alias gloga='git log --oneline --decorate --graph --all' # Show graph history for all refs.
-
-# Git commits and history editing.
-alias gc='git commit --verbose'          # Commit with the staged diff in the editor.
-alias gcmsg='git commit --message'       # Commit with a message argument.
-alias gcfu='git commit --fixup'          # Create a fixup commit for autosquash.
-alias grb='git rebase'                   # Rebase onto another branch or commit.
-alias grbi='git rebase --interactive'    # Edit commits during a rebase.
-alias grba='git rebase --abort'          # Abort the current rebase.
-alias grbc='git rebase --continue'       # Continue after resolving rebase conflicts.
-alias grst='git restore --staged'        # Unstage paths without discarding their changes.
-
-# Git remotes and synchronization.
-alias gf='git fetch'                         # Fetch from the default remote.
-alias gfa='git fetch --all --tags --prune'  # Refresh all remotes, tags, and stale refs.
-alias gpr='git pull --rebase'                # Pull and rebase local commits.
-alias gp='git push'                          # Push to the configured upstream.
-alias gpsup='git push --set-upstream origin HEAD' # Push the current branch and set upstream.
-
-# Git stashes and cherry-picks.
-alias gsta='git stash push'              # Stash tracked changes.
-alias gstp='git stash pop'               # Apply and remove the latest stash.
-alias gstl='git stash list'              # List stashes.
-alias gsts='git stash show --patch'      # Show the latest stash as a patch.
-alias gcp='git cherry-pick'              # Apply an existing commit.
-alias gcpa='git cherry-pick --abort'     # Abort the current cherry-pick.
-alias gcpc='git cherry-pick --continue'  # Continue after resolving cherry-pick conflicts.
+# Curated Git aliases shared by Bash and Zsh.
+. "$DOTFILES_SHELL_DIR/git-aliases.sh"
+alias ghelp='git-aliases' # Open the Git alias guide.
 
 # General command-line shortcuts.
 alias c='clear'       # Clear the terminal.

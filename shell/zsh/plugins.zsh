@@ -24,3 +24,8 @@ zstyle ':fzf-tab:*' fzf-flags '--preview-window=right:75%'
 # after it.
 source "$DOTFILES_ROOT/vendor/zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
 source "$DOTFILES_ROOT/vendor/zsh/zsh-history-substring-search/zsh-history-substring-search.zsh"
+
+# Prefer a specific Git alias such as gst or glg over the generic g alias.
+typeset -ga YSU_IGNORED_ALIASES
+(( ${YSU_IGNORED_ALIASES[(Ie)g]} )) || YSU_IGNORED_ALIASES+=(g)
+source "$DOTFILES_ROOT/vendor/zsh/zsh-you-should-use/you-should-use.plugin.zsh"

@@ -33,6 +33,18 @@ bindkey "^[[3~" | grep -Fq "delete-char" ||
   dotfiles_contract_fail "Zsh history substring search was not loaded"
 whence -w -- -ftb-complete | grep -Fq "function" ||
   dotfiles_contract_fail "fzf-tab was not loaded"
+[[ "${aliases[gsb]}" == 'git status --short --branch' ]] ||
+  dotfiles_contract_fail "OMZ-compatible Git aliases were not loaded"
+[[ "${aliases[ghelp]}" == 'git-aliases' ]] ||
+  dotfiles_contract_fail "the Git alias guide shortcut was not loaded"
+whence -p git-aliases >/dev/null ||
+  dotfiles_contract_fail "the Git alias guide command was not installed"
+(( $+functions[check_alias_usage] )) ||
+  dotfiles_contract_fail "zsh-you-should-use was not loaded"
+ysu_reminder="$(_check_aliases 'git log --stat -5' 'git log --stat -5' 2>&1)"
+[[ "$ysu_reminder" == *'You should use:'*'glg'* ]] ||
+  dotfiles_contract_fail "zsh-you-should-use did not recommend glg"
+unset ysu_reminder
 [[ "$DOTFILES_PERSONAL_ZSH_LOADED" == 1 ]] ||
   dotfiles_contract_fail "personal.zsh was not loaded"
 

@@ -27,10 +27,6 @@
 [merge]
     conflictStyle = zdiff3
 
-[alias]
-    amend = commit --amend --no-edit
-    lg = log --graph --decorate --oneline --all
-
 [include]
     path = ~/.config/delta/config.gitconfig
 
@@ -38,4 +34,3 @@
     editor = nvim
     autocrlf = input
     excludesFile = ~/.config/git/ignore
-

@@ -1,0 +1,39 @@
+# category	alias	what	when	why	example
+basics	g	Run Git through its shortest alias.	Any time you would otherwise type git.	It keeps longer Git commands compact.	g status
+staging	ga	Stage specific paths.	When a change is ready for the next commit.	It stages only the paths you name.	ga src/example.cs
+staging	gaa	Stage every tracked and untracked change.	When the entire working tree belongs in one commit.	It captures additions, modifications, and deletions together.	gaa
+staging	gapa	Interactively stage selected hunks.	When a file contains more than one logical change.	It keeps commits focused without editing files again.	gapa src/example.cs
+staging	grst	Unstage paths while preserving their working-tree changes.	When something was staged too early or into the wrong commit.	It changes the index without discarding work.	grst src/example.cs
+status	gsb	Show compact status with branch information.	Before deciding what to stage, commit, or push.	It shows branch and working-tree state without full prose.	gsb
+status	gss	Show compact working-tree status.	When you only need the changed-path summary.	It is the quietest useful status view.	gss
+status	gst	Show full working-tree status.	When compact status does not provide enough context.	It includes Git's explanations and suggested next commands.	gst
+diff	gd	Show unstaged changes.	Before staging or discarding working-tree edits.	It reviews what has changed but is not staged.	gd -- src/example.cs
+diff	gds	Show staged changes.	Immediately before committing.	It reviews exactly what the next commit will contain.	gds
+branches	gb	List or manage local branches.	When inspecting or changing local branch metadata.	It is the direct entry point to git branch.	gb
+branches	gba	List local and remote-tracking branches.	When locating work that is not visible locally.	It provides the complete branch overview.	gba
+branches	gsw	Switch to another branch.	When moving to existing work.	It uses the purpose-built switch command instead of checkout.	gsw main
+branches	gswc	Create and switch to a branch.	When starting a new line of work.	It performs creation and switching atomically.	gswc issue/123-example
+history	gsh	Show a commit or Git object.	When inspecting one specific revision.	It includes commit metadata and its patch.	gsh HEAD
+history	glo	Show decorated one-line history from HEAD.	When scanning recent commits quickly.	It keeps commit identity, subject, and refs on one line.	glo -10
+history	glog	Show a decorated one-line graph from HEAD.	When understanding merges in current history.	The graph exposes branch topology without verbose patches.	glog -15
+history	gloga	Show the decorated graph across all refs.	When locating commits across branches and remotes.	It reveals relationships that HEAD-only history omits.	gloga
+history	glg	Show history with changed-file statistics.	When reviewing the scope of recent commits.	It connects each commit to the files it touched.	glg -5
+history	glgp	Show history with statistics and full patches.	When a commit-by-commit code review needs full detail.	It combines history, file scope, and exact changes.	glgp -2
+commits	gc	Create a commit with the staged diff visible in the editor.	When writing a considered commit message.	The staged diff provides context while composing the message.	gc
+commits	gcmsg	Create a commit with a supplied message.	When the message is already clear and short.	It avoids opening an editor.	gcmsg 'fix(shell): load aliases'
+commits	gcfu	Create a fixup commit targeting another commit.	When correcting an earlier local commit before autosquash.	It records the intended squash target automatically.	gcfu HEAD~2
+rebase	grb	Rebase the current branch.	When replaying local work onto a new base.	It keeps linear history when that is the chosen workflow.	grb main
+rebase	grbi	Start an interactive rebase.	When reordering, squashing, editing, or dropping commits.	It gives precise control over local history.	grbi HEAD~4
+rebase	grba	Abort the active rebase.	When the current conflict resolution path is wrong.	It returns to the state from before the rebase.	grba
+rebase	grbc	Continue the active rebase.	After resolving and staging current conflicts.	It resumes the paused rebase sequence.	grbc
+remotes	gf	Fetch from the default remote.	When refreshing remote-tracking state.	It updates remote knowledge without changing local work.	gf
+remotes	gfa	Fetch all remotes and tags, pruning stale refs in parallel.	When refreshing the repository's complete remote view.	It cleans stale refs and speeds multi-remote fetching.	gfa
+remotes	gpr	Pull and rebase local commits.	When updating a branch without adding a merge commit.	It replays local work on top of the fetched upstream.	gpr
+remotes	gp	Push to the configured destination.	When publishing commits to the current upstream.	It uses Git's configured push behavior without extra assumptions.	gp
+stash	gsta	Stash tracked working-tree changes.	When work must be set aside temporarily.	It clears tracked edits while preserving them for later.	gsta
+stash	gstp	Apply and remove the latest stash.	When resuming the most recently stashed work.	It restores the changes and cleans up the stash entry.	gstp
+stash	gstl	List available stashes.	When choosing which saved work to restore or inspect.	It shows stash identifiers and their descriptions.	gstl
+stash	gsts	Show the latest stash as a patch.	Before applying or dropping stashed work.	It reveals the exact saved changes.	gsts
+cherry-pick	gcp	Apply an existing commit to the current branch.	When reusing one focused commit without merging its branch.	It transfers the selected change and records a new commit.	gcp abc1234
+cherry-pick	gcpa	Abort the active cherry-pick.	When conflicts make the selected change unsuitable.	It returns to the state before the cherry-pick began.	gcpa
+cherry-pick	gcpc	Continue the active cherry-pick.	After resolving and staging cherry-pick conflicts.	It completes the paused operation.	gcpc

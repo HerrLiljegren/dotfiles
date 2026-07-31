@@ -40,6 +40,7 @@ grep -Fq 'existing-model' "$TEST_HOME/.codex/config.toml" || fail 'Codex config 
 [[ -L "$TEST_HOME/.config/worktrunk/config.toml" ]] || fail 'Worktrunk config was not linked'
 [[ -L "$TEST_HOME/.config/herdr/config.toml" ]] || fail 'Herdr config was not linked'
 [[ -L "$TEST_HOME/.config/hunk/config.toml" ]] || fail 'Hunk config was not linked'
+[[ -L "$TEST_HOME/.local/bin/git-aliases" ]] || fail 'Git alias guide was not linked'
 [[ "$(grep -Fc '# >>> dotfiles:bash >>>' "$TEST_HOME/.bashrc")" == 1 ]] || fail 'bash block count is not one'
 [[ "$(grep -Fc '# >>> dotfiles:zsh >>>' "$TEST_HOME/.zshrc")" == 1 ]] || fail 'zsh block count is not one'
 [[ "$(grep -Fc '# >>> dotfiles:git >>>' "$TEST_HOME/.gitconfig")" == 1 ]] || fail 'git block count is not one'
@@ -114,6 +115,7 @@ XDG_CONFIG_HOME="$TEST_HOME/.config" \
 
 [[ ! -L "$TEST_HOME/.config/starship.toml" ]] || fail 'starship symlink remained after uninstall'
 grep -Fq 'existing starship config' "$TEST_HOME/.config/starship.toml" || fail 'starship backup was not restored'
+[[ ! -L "$TEST_HOME/.local/bin/git-aliases" ]] || fail 'Git alias guide symlink remained after uninstall'
 grep -Fq 'helper = existing-helper' "$TEST_HOME/.gitconfig" || fail 'Git credential helper was lost during uninstall'
 if grep -Fq '# >>> dotfiles:' "$TEST_HOME/.bashrc" "$TEST_HOME/.zshrc" "$TEST_HOME/.gitconfig"; then
   fail 'managed block remained after uninstall'

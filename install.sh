@@ -131,6 +131,7 @@ link_path "$ROOT/config/nvim" "$XDG_CONFIG_HOME/nvim"
 link_path "$ROOT/config/starship.toml" "$XDG_CONFIG_HOME/starship.toml"
 link_path "$ROOT/config/worktrunk/config.toml" "$XDG_CONFIG_HOME/worktrunk/config.toml"
 link_path "$ROOT/git/ignore" "$XDG_CONFIG_HOME/git/ignore"
+link_path "$ROOT/bin/git-aliases" "$HOME/.local/bin/git-aliases"
 link_path "$ROOT/agents/AGENTS.md" "$HOME/.agents/AGENTS.md"
 link_path \
   "$ROOT/agents/AGENTS.md" \

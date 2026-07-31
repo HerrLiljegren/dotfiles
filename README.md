@@ -15,8 +15,9 @@ devcontainers. The repository configures tools but never installs them.
 ## Managed configuration
 
 - Bash and Zsh integration
-- Shared Zsh history, fzf completion, autosuggestions, and syntax highlighting
-- Git behavior and global ignore patterns
+- Shared Zsh history, fzf completion, autosuggestions, syntax highlighting,
+  and alias reminders
+- Git behavior, OMZ-compatible aliases, an alias guide, and global ignores
 - Bat, Delta, Glow, Hunk, Starship, and Neovim
 - Worktrunk and Herdr
 - Global Codex working agreements
@@ -61,12 +62,20 @@ Both files are optional and remain outside this repository. Do not set or
 unset `ZDOTDIR` in `.zshenv` or either personal file. VS Code temporarily owns
 that variable while injecting its shell integration.
 
+### Git aliases
+
+The shared Bash and Zsh aliases are a curated subset of the Oh My Zsh Git
+plugin. Their definitions are verified against a pinned upstream snapshot.
+Run `ghelp` for a compact overview, `ghelp <alias-or-category>` for usage
+guidance, or `ghelp --all` for the complete guide.
+
 ### Vendored Zsh plugins
 
 Runtime files for autosuggestions, history substring search, syntax
-highlighting, and fzf-tab are pinned under `vendor/zsh`. Shell startup never
-clones or updates plugins. Upstream revisions and retained licenses are
-documented in `vendor/zsh/README.md`.
+highlighting, fzf-tab, and alias reminders are pinned under `vendor/zsh`.
+The pinned Oh My Zsh Git plugin is retained there as the alias reference.
+Shell startup never clones or updates plugins. Upstream revisions and retained
+licenses are documented in `vendor/zsh/README.md`.
 
 ## Devcontainer integration
 
@@ -91,6 +100,8 @@ updates.
 
 ```bash
 bash -n install.sh uninstall.sh doctor.sh tests/install.sh
+bash tests/git-alias-guide.sh
+zsh tests/git-aliases.zsh
 bash tests/install.sh
 ./doctor.sh
 ```
