@@ -40,6 +40,7 @@ grep -Fq 'existing-model' "$TEST_HOME/.codex/config.toml" || fail 'Codex config 
 [[ -L "$TEST_HOME/.config/worktrunk/config.toml" ]] || fail 'Worktrunk config was not linked'
 [[ -L "$TEST_HOME/.config/herdr/config.toml" ]] || fail 'Herdr config was not linked'
 [[ -L "$TEST_HOME/.config/hunk/config.toml" ]] || fail 'Hunk config was not linked'
+[[ -d "$TEST_HOME/.local/bin" && ! -L "$TEST_HOME/.local/bin" ]] || fail '.local/bin was not created as a real directory'
 [[ -L "$TEST_HOME/.local/bin/git-aliases" ]] || fail 'Git alias guide was not linked'
 [[ "$(grep -Fc '# >>> dotfiles:bash >>>' "$TEST_HOME/.bashrc")" == 1 ]] || fail 'bash block count is not one'
 [[ "$(grep -Fc '# >>> dotfiles:zsh >>>' "$TEST_HOME/.zshrc")" == 1 ]] || fail 'zsh block count is not one'

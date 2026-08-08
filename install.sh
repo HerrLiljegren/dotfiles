@@ -241,6 +241,10 @@ configure_bat_cache() {
 
 section 'Dotfiles'
 
+[[ ! -L "$HOME/.local/bin" ]] ||
+  die "$HOME/.local/bin must be a real directory, not a symlink"
+mkdir -p -- "$HOME/.local/bin"
+
 link_path "$ROOT/config/bat/config" "$XDG_CONFIG_HOME/bat/config"
 link_path "$ROOT/config/bat/themes/Catppuccin Mocha.tmTheme" "$XDG_CONFIG_HOME/bat/themes/Catppuccin Mocha.tmTheme"
 link_path "$ROOT/config/delta/config.gitconfig" "$XDG_CONFIG_HOME/delta/config.gitconfig"
