@@ -25,13 +25,16 @@ type(scope): description
 - Add `!` before the colon only for a breaking change.
 - Keep the subject under 72 characters with a concise, lowercase, imperative
   description and no final period.
-- Keep commits atomic. Include directly related tests and documentation with
-  the behavior they cover, and do not combine unrelated changes.
-- For simple changes, use only the subject. Add a body only when it provides
-  important context the subject cannot capture, such as rationale, constraints,
-  or non-obvious consequences. Separate it with a blank line and use either one
-  short paragraph or 1-3 concise bullets, wrapped at 72 characters. Preserve
-  any repository-required trailers.
+- For simple changes, use only the subject.
+- For material changes, prefer a concise bullet-list body:
+  - use 2-5 - bullets
+  - use lowercase sentence fragments, except where casing is semantically
+    significant
+  - start with an imperative verb when practical
+  - describe behavior, rationale, or consequences rather than changed files
+  - do not repeat the subject
+  - omit final periods for short single-sentence bullets
+  - wrap body lines at 72 characters
 
 ## .NET solution and project defaults
 
