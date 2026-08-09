@@ -12,24 +12,8 @@ new = "wt switch --create --no-cd {{ args }}"
 
 [commit.generation]
 # Codex — write the final response to a temp file and print only that.
-command = "sh -c 'tmp=$(mktemp); codex -a never exec --ephemeral --sandbox read-only -m gpt-5.6-luna -c model_reasoning_effort=low -o \"$tmp\" - >/dev/null && cat \"$tmp\"; status=$?; rm -f \"$tmp\"; exit $status'"
+command = "codex exec -m gpt-5.6-luna -c model_reasoning_effort='low' -c system_prompt='' --sandbox=read-only --json - | jq -sr '[.[] | select(.item.type? == \"agent_message\")] | last.item.text'"
 
-template = """
-Write the commit message for this staged diff.
-Output only the commit message without explanation or file lists.
-
-{{ git_diff }}
-"""
-
-squash-template = """
-Write the commit message for the final squashed change.
-Describe the final result rather than the intermediate commits.
-Output only the commit message without explanation or file lists.
-
-Commits:
-{% for commit in commit_details %}- {{ commit }}
-{% endfor %}
-
-Diff:
-{{ git_diff }}
+template-append = """
+- Prefer clarity over forcing the subject below 50 characters; up to 72 characters is acceptable.
 """
