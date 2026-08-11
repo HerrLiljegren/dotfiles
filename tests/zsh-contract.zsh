@@ -33,6 +33,8 @@ bindkey "^[[3~" | grep -Fq "delete-char" ||
   dotfiles_contract_fail "Zsh history substring search was not loaded"
 whence -w -- -ftb-complete | grep -Fq "function" ||
   dotfiles_contract_fail "fzf-tab was not loaded"
+[[ "$FZF_DEFAULT_OPTS" == *'marker:#a6e3a1'* ]] ||
+  dotfiles_contract_fail "the Catppuccin fzf theme was not loaded"
 [[ "${aliases[gsb]}" == 'git status --short --branch' ]] ||
   dotfiles_contract_fail "OMZ-compatible Git aliases were not loaded"
 [[ "${aliases[ghelp]}" == 'git-aliases' ]] ||
