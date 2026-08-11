@@ -8,9 +8,11 @@ CATALOG="${SKILLSET_CATALOG:-${XDG_DATA_HOME:-$HOME/.local/share}/skillset/catal
 AGENTS_SKILLS="${SKILLSET_AGENTS_DIR:-$HOME/.agents/skills}"
 CLAUDE_SKILLS="${SKILLSET_CLAUDE_DIR:-$HOME/.claude/skills}"
 TEMP_FILE=''
+TEMP_DIR=''
 
 cleanup() {
   [[ -z "$TEMP_FILE" || ! -e "$TEMP_FILE" ]] || rm -- "$TEMP_FILE"
+  [[ -z "$TEMP_DIR" || ! -d "$TEMP_DIR" ]] || rm -rf -- "$TEMP_DIR"
 }
 trap cleanup EXIT
 
@@ -109,6 +111,87 @@ quiet_skill_install() {
     printf '%s\n' "$output" >&2
     return "$status"
   fi
+}
+
+metadata_tree_sha() {
+  awk '
+    /^metadata:[[:space:]]*$/ { metadata = 1; next }
+    metadata && /^[^[:space:]]/ { exit }
+    metadata && /^[[:space:]]+github-tree-sha:[[:space:]]*/ {
+      sub(/^[[:space:]]+github-tree-sha:[[:space:]]*/, "")
+      print
+      exit
+    }
+  ' "$1"
+}
+
+inspect_exact_path_updates() {
+  local name source selector current_sha latest_sha
+
+  while IFS=$'\t' read -r name source selector; do
+    TEMP_DIR="$(mktemp -d /tmp/skillset-update.XXXXXX)"
+    quiet_skill_install "$source" "$selector" --dir "$TEMP_DIR"
+    [[ -f "$TEMP_DIR/$name/SKILL.md" ]] ||
+      die "gh skill installed an unexpected layout for: $name"
+    current_sha="$(metadata_tree_sha "$CATALOG/$name/SKILL.md")"
+    latest_sha="$(metadata_tree_sha "$TEMP_DIR/$name/SKILL.md")"
+    [[ -n "$current_sha" && -n "$latest_sha" ]] ||
+      die "exact-path skill is missing update metadata: $name"
+    [[ "$current_sha" == "$latest_sha" ]] ||
+      printf '%s\t%s\t%s\n' "$name" "$source" "$selector"
+    rm -rf -- "$TEMP_DIR"
+    TEMP_DIR=''
+  done < <(jq -r '
+    .skills[] |
+    select(.selector | endswith("/SKILL.md")) |
+    [.name, .source, .selector] |
+    @tsv
+  ' "$MANIFEST")
+}
+
+run_updates() {
+  local dry_run=$1 output status exact_updates name source selector answer
+  local -a regular_names=() command=(gh skill update)
+
+  mapfile -t regular_names < <(jq -r '
+    .skills[] | select(.selector | endswith("/SKILL.md") | not) | .name
+  ' "$MANIFEST")
+
+  exact_updates="$(inspect_exact_path_updates)"
+  if ((${#regular_names[@]} > 0)); then
+    command+=("${regular_names[@]}" --dir "$CATALOG")
+    [[ "$dry_run" == false ]] || command+=(--dry-run)
+    if output="$("${command[@]}" 2>&1)"; then
+      status=0
+    else
+      status=$?
+    fi
+  else
+    output=''
+    status=0
+  fi
+  ((status == 0)) || { printf '%s\n' "$output" >&2; return "$status"; }
+
+  if [[ -n "$exact_updates" ]]; then
+    output="$(sed '/^All skills are up to date\.$/d' <<<"$output")"
+  elif [[ -z "$output" ]]; then
+    output='All skills are up to date.'
+  fi
+  [[ -z "$output" ]] || printf '%s\n' "$output"
+
+  while IFS=$'\t' read -r name source selector; do
+    [[ -z "$name" ]] || printf 'Update available: %s (from %s)\n' "$name" "$source"
+  done <<<"$exact_updates"
+  [[ "$dry_run" == true || -z "$exact_updates" ]] && return 0
+
+  printf '\nUpdate exact-path skills? [y/N] '
+  IFS= read -r answer || answer=''
+  [[ "$answer" == [yY] ]] || { printf 'Skipped exact-path updates.\n'; return 0; }
+
+  while IFS=$'\t' read -r name source selector; do
+    quiet_skill_install "$source" "$selector" --dir "$CATALOG" --force
+    printf 'Updated %s.\n' "$name"
+  done <<<"$exact_updates"
 }
 
 install_missing() {
@@ -418,14 +501,14 @@ main() {
       require_command gh
       require_command jq
       validate_catalog
-      gh skill update --dir "$CATALOG" --dry-run
+      run_updates true
       ;;
     update)
       [[ $# == 1 ]] || { usage; return 2; }
       require_command gh
       require_command jq
       validate_catalog
-      gh skill update --dir "$CATALOG"
+      run_updates false
       ;;
     add)
       [[ $# == 2 || $# == 3 ]] || { usage; return 2; }

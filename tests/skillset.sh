@@ -41,6 +41,7 @@ write_manifest() {
     '  "version": 1,' \
     '  "skills": [' \
     '    {"name":"alpha","source":"example/skills","selector":"alpha","description":"Alpha skill","enabled":true},' \
+    '    {"name":"exact","source":"example/exact","selector":"src/Resources/exact/SKILL.md","description":"Exact-path skill","enabled":false},' \
     '    {"name":"gamma","source":"zeta/more","selector":"gamma","description":"Gamma skill","enabled":true},' \
     '    {"name":"beta","source":"example/skills","selector":"beta","description":"Beta skill","enabled":false}' \
     '  ]' \
@@ -98,10 +99,9 @@ printf '%s\n' \
   '    printf "verbose gh install output\n"' \
   '    if [[ ${FAKE_GH_FAIL_INSTALL:-} == 1 ]]; then printf "fake install failed\n" >&2; exit 42; fi' \
   '    selector=${4:-installed}' \
-  '    name=${selector##*/}' \
-  '    name=${name%/SKILL.md}' \
+  '    if [[ $selector == */SKILL.md ]]; then parent=${selector%/SKILL.md}; name=${parent##*/}; else name=${selector##*/}; fi' \
   '    mkdir -p -- "$catalog/$name"' \
-  '    printf "%s\n" --- "name: $name" "description: >" "  Added from GitHub" "  with folded text." --- >"$catalog/$name/SKILL.md"' \
+  '    printf "%s\n" --- "name: $name" "description: >" "  Added from GitHub" "  with folded text." "metadata:" "    github-tree-sha: new-tree-sha" --- >"$catalog/$name/SKILL.md"' \
   '    ;;' \
   '  "skill update") printf "%s\n" "$*" >>"$GH_LOG" ;;' \
   '  *) exit 2 ;;' \
@@ -111,6 +111,14 @@ chmod +x "$FAKE_BIN/gh"
 write_manifest
 install_fixture_skill alpha
 install_fixture_skill beta
+mkdir -p -- "$CATALOG/exact"
+printf '%s\n' \
+  '---' \
+  'name: exact' \
+  'description: Exact-path skill' \
+  'metadata:' \
+  '    github-tree-sha: old-tree-sha' \
+  '---' >"$CATALOG/exact/SKILL.md"
 install_fixture_skill gamma
 
 run_skillset sync >/dev/null
@@ -145,11 +153,13 @@ printf 'y\n' | FAKE_FZF_SELECTED='alpha,beta' run_skillset >/dev/null
 mapfile -t picker_input <"$FZF_LOG"
 [[ "${picker_input[0]}" == CREATOR*SKILL*DESCRIPTION*STATUS*SOURCE* ]] ||
   fail 'picker did not render column headings'
-[[ "${picker_input[1]}" == example*alpha*'Alpha skill'*installed*skills* ]] ||
+[[ "${picker_input[1]}" == example*exact*'Exact-path skill'*installed*exact* ]] ||
+  fail 'picker did not render the exact-path skill row'
+[[ "${picker_input[2]}" == example*alpha*'Alpha skill'*installed*skills* ]] ||
   fail 'picker did not render the installed skill row'
-[[ "${picker_input[2]}" == example*beta*'Beta skill'*'not installed'*skills* ]] ||
+[[ "${picker_input[3]}" == example*beta*'Beta skill'*'not installed'*skills* ]] ||
   fail 'picker did not group skills or render the missing skill row'
-[[ "${picker_input[3]}" == zeta*gamma*'Gamma skill'*installed*more* ]] ||
+[[ "${picker_input[4]}" == zeta*gamma*'Gamma skill'*installed*more* ]] ||
   fail 'picker did not sort creator groups'
 jq -e '[.skills[] | select(.enabled) | .name] == ["alpha", "beta"]' \
   "$MANIFEST" >/dev/null || fail 'picker did not update the manifest'
@@ -202,9 +212,16 @@ jq -e '
   (.enabled == false and .description == "Added from GitHub with folded text.")
 ' "$MANIFEST" >/dev/null || fail 'add did not record the installed skill'
 
-run_skillset updates >/dev/null
-run_skillset update >/dev/null
-grep -Fq 'skill update --dir' "$GH_LOG" || fail 'update commands were not delegated to gh skill'
+updates_output="$(run_skillset updates)"
+[[ "$updates_output" == *'Update available: exact'* ]] ||
+  fail 'updates did not report the exact-path update'
+printf 'y\n' | run_skillset update >/dev/null
+grep -Fq 'skill update ' "$GH_LOG" || fail 'update commands were not delegated to gh skill'
 grep -Fq -- '--dry-run' "$GH_LOG" || fail 'updates did not use dry-run'
+grep -Fq 'github-tree-sha: new-tree-sha' "$CATALOG/exact/SKILL.md" ||
+  fail 'update did not refresh the exact-path skill'
+if grep -Fq ' exact ' "$GH_LOG"; then
+  fail 'exact-path skill was delegated to gh skill update discovery'
+fi
 
 printf 'skillset behavior tests passed\n'
