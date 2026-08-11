@@ -14,6 +14,23 @@ new = "wt switch --create --no-cd {{ args }}"
 # Codex — write the final response to a temp file and print only that.
 command = "codex exec -m gpt-5.6-luna -c model_reasoning_effort='low' -c system_prompt='' --sandbox=read-only --json - | jq -sr '[.[] | select(.item.type? == \"agent_message\")] | last.item.text'"
 
-template-append = """
-- Prefer clarity over forcing the subject below 50 characters; up to 72 characters is acceptable.
+template = """
+Write the commit message for these staged changes.
+Follow the active AGENTS.md commit-style instructions exactly.
+Output only the commit message.
+
+<diffstat>
+{{ git_diff_stat }}
+</diffstat>
+
+<diff>
+{{ git_diff }}
+</diff>
+
+<context>
+Branch: {{ branch }}
+{% if recent_commits %}<recent_commits>
+{% for commit in recent_commits %}- {{ commit }}
+{% endfor %}</recent_commits>{% endif %}
+</context>
 """
