@@ -37,8 +37,8 @@ usage() {
   printf '  herdr-plugins   Install or refresh the latest Herdr plugins.\n'
   printf '  none            Link dotfiles only.\n'
   printf '\n'
-  printf 'With no arguments, an interactive terminal prompts with all selected by\n'
-  printf 'default. A non-interactive run links dotfiles only.\n'
+  printf 'With no arguments, both interactive and non-interactive runs link\n'
+  printf 'dotfiles only. Interactive runs can select additional setup.\n'
 }
 
 add_optional_setup() {
@@ -81,13 +81,13 @@ choose_optional_setup() {
 
   printf '\n%sDotfiles installer%s\n\n' "$BOLD" "$RESET"
   printf 'Choose what to install:\n\n'
-  printf '  1. Everything (default)\n'
+  printf '  1. Dotfiles only (default)\n'
+  printf '     Link configuration without downloading or updating plugins.\n\n'
+  printf '  2. Everything\n'
   printf '     Link dotfiles and run every optional setup.\n\n'
   printf '     Includes:\n'
   printf '       - Herdr plugins\n\n'
   printf '     Requires network access and may run third-party build commands.\n\n'
-  printf '  2. Dotfiles only\n'
-  printf '     Link configuration without downloading or updating plugins.\n\n'
 
   while true; do
     printf 'Selection [1]: '
@@ -95,11 +95,11 @@ choose_optional_setup() {
 
     case "$selection" in
       '' | 1)
-        OPTIONAL_SETUPS=('herdr-plugins')
+        OPTIONAL_SETUPS=()
         return
         ;;
       2)
-        OPTIONAL_SETUPS=()
+        OPTIONAL_SETUPS=('herdr-plugins')
         return
         ;;
       *)
@@ -256,6 +256,7 @@ link_path "$ROOT/config/starship.toml" "$XDG_CONFIG_HOME/starship.toml"
 link_path "$ROOT/config/worktrunk/config.toml" "$XDG_CONFIG_HOME/worktrunk/config.toml"
 link_path "$ROOT/git/ignore" "$XDG_CONFIG_HOME/git/ignore"
 link_path "$ROOT/bin/git-aliases" "$HOME/.local/bin/git-aliases"
+link_path "$ROOT/bin/skillset" "$HOME/.local/bin/skillset"
 link_path "$ROOT/agents/AGENTS.md" "$HOME/.agents/AGENTS.md"
 link_path \
   "$ROOT/agents/AGENTS.md" \

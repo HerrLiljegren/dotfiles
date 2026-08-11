@@ -78,14 +78,13 @@ printf '\n' | \
     XDG_CONFIG_HOME="$TEST_HOME/.config" \
     HERDR_TEST_LOG="$HERDR_LOG" \
     script -qefc "$ROOT/install.sh" /dev/null \
-    >"$TEST_ROOT/interactive-all.log"
+    >"$TEST_ROOT/interactive-dotfiles.log"
 
-grep -Fq 'Choose what to install:' "$TEST_ROOT/interactive-all.log" || fail 'interactive install did not show the selection prompt'
-grep -Fq '==> Dotfiles' "$TEST_ROOT/interactive-all.log" || fail 'interactive install omitted the dotfiles progress section'
-grep -Fq '==> Herdr plugins' "$TEST_ROOT/interactive-all.log" || fail 'interactive install omitted the Herdr progress section'
-grep -Fq '==> Complete' "$TEST_ROOT/interactive-all.log" || fail 'interactive install omitted the completion section'
-actual_calls="$(<"$HERDR_LOG")"
-[[ "$actual_calls" == "$expected_calls" ]] || fail 'interactive default did not install everything'
+grep -Fq 'Choose what to install:' "$TEST_ROOT/interactive-dotfiles.log" || fail 'interactive install did not show the selection prompt'
+grep -Fq '1. Dotfiles only (default)' "$TEST_ROOT/interactive-dotfiles.log" || fail 'interactive install did not show the dotfiles default'
+grep -Fq '==> Dotfiles' "$TEST_ROOT/interactive-dotfiles.log" || fail 'interactive install omitted the dotfiles progress section'
+grep -Fq '==> Complete' "$TEST_ROOT/interactive-dotfiles.log" || fail 'interactive install omitted the completion section'
+[[ ! -s "$HERDR_LOG" ]] || fail 'interactive default invoked optional setup'
 
 : >"$HERDR_LOG"
 printf '2\n' | \
@@ -95,9 +94,11 @@ printf '2\n' | \
     XDG_CONFIG_HOME="$TEST_HOME/.config" \
     HERDR_TEST_LOG="$HERDR_LOG" \
     script -qefc "$ROOT/install.sh" /dev/null \
-    >"$TEST_ROOT/interactive-dotfiles.log"
+    >"$TEST_ROOT/interactive-all.log"
 
-[[ ! -s "$HERDR_LOG" ]] || fail 'interactive dotfiles-only selection invoked Herdr'
+grep -Fq '==> Herdr plugins' "$TEST_ROOT/interactive-all.log" || fail 'interactive everything selection omitted the Herdr progress section'
+actual_calls="$(<"$HERDR_LOG")"
+[[ "$actual_calls" == "$expected_calls" ]] || fail 'interactive everything selection omitted optional setup'
 
 HOME="$TEST_HOME" "$ROOT/install.sh" --help >"$TEST_ROOT/help.log"
 grep -Fq 'usage: install.sh [--with NAME]...' "$TEST_ROOT/help.log" || fail 'installer help omitted usage'

@@ -41,9 +41,9 @@ with the `.pre-dotfiles` suffix. If that backup already exists, installation
 stops rather than overwriting either file.
 
 When standard input and output are attached to a terminal, the installer asks
-whether to install everything or dotfiles only. Everything is the default and
-includes the latest Herdr plugins. The prompt explains that this requires
-network access and may run third-party build commands.
+whether to install dotfiles only or everything. Dotfiles only is the default.
+Everything includes the latest Herdr plugins; the prompt explains that this
+requires network access and may run third-party build commands.
 
 Non-interactive installation remains configuration-only. Automation can select
 optional setup explicitly:
@@ -134,6 +134,7 @@ bash -n install.sh install/optional/herdr-plugins.sh uninstall.sh doctor.sh
 bash -n tests/install.sh tests/install-options.sh
 bash tests/install-options.sh
 bash tests/git-alias-guide.sh
+bash tests/skillset.sh
 zsh tests/git-aliases.zsh
 bash tests/install.sh
 ./doctor.sh
