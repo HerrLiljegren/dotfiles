@@ -1,0 +1,444 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_PATH="$(readlink -f -- "${BASH_SOURCE[0]}")"
+ROOT="$(cd -- "$(dirname -- "$SCRIPT_PATH")/.." && pwd -P)"
+MANIFEST="${SKILLSET_MANIFEST:-$ROOT/agents/skills.json}"
+CATALOG="${SKILLSET_CATALOG:-${XDG_DATA_HOME:-$HOME/.local/share}/skillset/catalog}"
+AGENTS_SKILLS="${SKILLSET_AGENTS_DIR:-$HOME/.agents/skills}"
+CLAUDE_SKILLS="${SKILLSET_CLAUDE_DIR:-$HOME/.claude/skills}"
+TEMP_FILE=''
+
+cleanup() {
+  [[ -z "$TEMP_FILE" || ! -e "$TEMP_FILE" ]] || rm -- "$TEMP_FILE"
+}
+trap cleanup EXIT
+
+usage() {
+  cat >&2 <<'EOF'
+usage: skillset
+       skillset sync
+       skillset updates
+       skillset update
+       skillset add OWNER/REPO [SKILL]
+EOF
+}
+
+die() {
+  printf 'skillset: %s\n' "$*" >&2
+  exit 1
+}
+
+require_command() {
+  command -v "$1" >/dev/null 2>&1 || die "$1 is required"
+}
+
+validate_manifest() {
+  local manifest=$1
+
+  [[ -f "$manifest" ]] || die "manifest not found: $manifest"
+  jq -e '
+    .version == 1 and
+    (.skills | type == "array") and
+    (all(.skills[];
+      (.name | type == "string" and test("^[A-Za-z0-9][A-Za-z0-9._-]*$")) and
+      (.source | type == "string" and test("^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")) and
+      ((.selector // .name) | type == "string" and length > 0 and (test("[\\t\\r\\n]") | not)) and
+      ((.description // "") | type == "string" and (test("[\\t\\r\\n]") | not)) and
+      (.enabled | type == "boolean")
+    )) and
+    (([.skills[].name] | length) == ([.skills[].name] | unique | length))
+  ' "$manifest" >/dev/null || die "invalid manifest: $manifest"
+}
+
+manifest_rows() {
+  jq -r '
+    .skills |
+    sort_by(
+      (.source | split("/")[0] | ascii_downcase),
+      (.source | ascii_downcase),
+      (.name | ascii_downcase)
+    )[] |
+    [.name, .source, (.selector // .name), (.description // ""), (.enabled | tostring)] |
+    @tsv
+  ' "$1"
+}
+
+preflight() {
+  local manifest=$1 allow_missing=${2:-false}
+  local catalog_root name source selector description enabled expected
+  local root entry resolved
+  declare -A names=()
+
+  validate_manifest "$manifest"
+  catalog_root="$(realpath -m -- "$CATALOG")"
+
+  while IFS=$'\t' read -r name source selector description enabled; do
+    names["$name"]=1
+    expected="$catalog_root/$name"
+    if [[ "$allow_missing" == false && "$enabled" == true && ! -f "$expected/SKILL.md" ]]; then
+      die "enabled skill is not installed: $name"
+    fi
+  done < <(manifest_rows "$manifest")
+
+  for root in "$AGENTS_SKILLS" "$CLAUDE_SKILLS"; do
+    if [[ -L "$root" ]]; then
+      resolved="$(realpath -m -- "$root")"
+      [[ "$root" == "$CLAUDE_SKILLS" && "$resolved" == "$(realpath -m -- "$AGENTS_SKILLS")" ]] ||
+        die "skill destination must be a real directory: $root"
+      continue
+    fi
+    [[ ! -e "$root" || -d "$root" ]] || die "skill destination is not a directory: $root"
+    [[ -d "$root" ]] || continue
+
+    while IFS= read -r -d '' entry; do
+      name=${entry##*/}
+      [[ -n "${names[$name]:-}" ]] || die "unmanaged entry blocks reconciliation: $entry"
+      [[ -L "$entry" ]] || die "non-symlink entry blocks reconciliation: $entry"
+    done < <(find "$root" -mindepth 1 -maxdepth 1 -print0)
+  done
+}
+
+quiet_skill_install() {
+  local output status
+
+  if output="$(gh skill install "$@" 2>&1)"; then
+    return
+  else
+    status=$?
+    printf '%s\n' "$output" >&2
+    return "$status"
+  fi
+}
+
+install_missing() {
+  local manifest=$1 name source selector description enabled
+
+  while IFS=$'\t' read -r name source selector description enabled; do
+    [[ -f "$CATALOG/$name/SKILL.md" ]] && continue
+    require_command gh
+    mkdir -p -- "$CATALOG"
+    printf 'Installing %s from %s...\n' "$name" "$source"
+    quiet_skill_install "$source" "$selector" --dir "$CATALOG"
+    [[ -f "$CATALOG/$name/SKILL.md" ]] ||
+      die "gh skill installed an unexpected layout for: $name"
+  done < <(manifest_rows "$manifest")
+}
+
+validate_catalog() {
+  local name source selector description enabled entry
+  declare -A names=()
+
+  validate_manifest "$MANIFEST"
+  while IFS=$'\t' read -r name source selector description enabled; do
+    names["$name"]=1
+    [[ -f "$CATALOG/$name/SKILL.md" ]] || die "catalog skill is missing: $name"
+  done < <(manifest_rows "$MANIFEST")
+
+  [[ -d "$CATALOG" ]] || return 0
+  while IFS= read -r -d '' entry; do
+    name=${entry##*/}
+    [[ -n "${names[$name]:-}" ]] || die "unmanaged catalog entry: $entry"
+    [[ -d "$entry" && -f "$entry/SKILL.md" ]] || die "invalid catalog entry: $entry"
+  done < <(find "$CATALOG" -mindepth 1 -maxdepth 1 -print0)
+}
+
+reconcile() {
+  local manifest=$1
+  local catalog_root root name source selector description enabled expected destination
+
+  preflight "$manifest"
+  catalog_root="$(realpath -m -- "$CATALOG")"
+
+  for root in "$AGENTS_SKILLS" "$CLAUDE_SKILLS"; do
+    if [[ -L "$root" ]]; then
+      rm -- "$root"
+      printf 'Migrated shared skill directory: %s\n' "$root"
+    fi
+    mkdir -p -- "$root"
+    while IFS=$'\t' read -r name source selector description enabled; do
+      expected="$catalog_root/$name"
+      destination="$root/$name"
+      if [[ "$enabled" == true ]]; then
+        ln -sfn -- "$expected" "$destination"
+      elif [[ -L "$destination" ]]; then
+        rm -- "$destination"
+      fi
+    done < <(manifest_rows "$manifest")
+  done
+}
+
+initial_selection_binding() {
+  local manifest=$1 binding='start:' index=1
+  local name source selector description enabled
+
+  while IFS=$'\t' read -r name source selector description enabled; do
+    if [[ "$enabled" == true ]]; then
+      binding+="pos($index)+select+"
+    fi
+    ((index += 1))
+  done < <(manifest_rows "$manifest")
+  printf '%spos(1)' "$binding"
+}
+
+picker_rows() {
+  local name source selector description enabled status creator repository
+  local status_column display terminal_width fixed_width description_width
+  local creator_width skill_width status_width=13 source_width
+
+  creator_width="$(jq '[.skills[].source | split("/")[0] | length] | max // 7' "$MANIFEST")"
+  skill_width="$(jq '[.skills[].name | length] | max // 5' "$MANIFEST")"
+  source_width="$(jq '[.skills[].source | split("/")[1] | length] | max // 6' "$MANIFEST")"
+  ((creator_width >= 7)) || creator_width=7
+  ((skill_width >= 5)) || skill_width=5
+  ((source_width >= 6)) || source_width=6
+
+  terminal_width="${SKILLSET_COLUMNS:-$(tput cols)}"
+  fixed_width=$((creator_width + skill_width + status_width + source_width + 16))
+  description_width=$((terminal_width - fixed_width))
+  ((description_width >= 24)) || description_width=24
+
+  printf -v display "%-${creator_width}s  %-${skill_width}s  %-${description_width}s  %-${status_width}s  %-${source_width}s" \
+    CREATOR SKILL DESCRIPTION STATUS SOURCE
+  printf '%s\t\t\t\t\n' "$display"
+
+  while IFS=$'\t' read -r name source selector description enabled; do
+    creator=${source%%/*}
+    repository=${source#*/}
+    status='not installed'
+    [[ -f "$CATALOG/$name/SKILL.md" ]] && status='installed'
+    [[ -n "$description" ]] || description='No description available.'
+    if ((${#description} > description_width)); then
+      description="${description:0:description_width-1}…"
+    fi
+    printf -v status_column "%-${status_width}s" "$status"
+    case "$status" in
+      'not installed') status_column=$'\033[38;2;249;226;175m'"$status_column"$'\033[0m' ;;
+      'update available') status_column=$'\033[38;2;250;179;135m'"$status_column"$'\033[0m' ;;
+      *) status_column=$'\033[38;2;166;227;161m'"$status_column"$'\033[0m' ;;
+    esac
+    printf -v display "%-${creator_width}s  %-${skill_width}s  %-${description_width}s  %s  %-${source_width}s" \
+      "$creator" "$name" "$description" "$status_column" "$repository"
+    printf '%s\t%s\t%s\t%s\t%s\n' \
+      "$display" "$name" "$source" "$status" "$description"
+  done < <(manifest_rows "$MANIFEST")
+}
+
+selected_contains() {
+  local needle=$1 selected=$2 line
+  while IFS= read -r line; do
+    [[ "$line" == "$needle" ]] && return 0
+  done <<<"$selected"
+  return 1
+}
+
+review_selection() {
+  local selected=$1 name source selector description enabled any=0
+
+  printf '\nEnable\n'
+  while IFS=$'\t' read -r name source selector description enabled; do
+    if [[ "$enabled" == false ]] && selected_contains "$name" "$selected"; then
+      printf '  + %s\n' "$name"
+      any=1
+    fi
+  done < <(manifest_rows "$MANIFEST")
+  ((any)) || printf '  none\n'
+
+  any=0
+  printf '\nDisable\n'
+  while IFS=$'\t' read -r name source selector description enabled; do
+    if [[ "$enabled" == true ]] && ! selected_contains "$name" "$selected"; then
+      printf '  - %s\n' "$name"
+      any=1
+    fi
+  done < <(manifest_rows "$MANIFEST")
+  ((any)) || printf '  none\n'
+}
+
+open_picker() {
+  local result selected selected_json current_json candidate answer picker_status
+
+  require_command jq
+  require_command fzf
+  validate_manifest "$MANIFEST"
+  [[ "$(jq '.skills | length' "$MANIFEST")" != 0 ]] ||
+    die "catalog is empty; use skillset add OWNER/REPO [SKILL]"
+
+  if result=$(
+    picker_rows |
+      fzf --multi --sync --reverse --border=rounded --ansi --no-hscroll \
+        --delimiter=$'\t' --with-nth=1 --header-lines=1 \
+        --layout=reverse --list-label=' Catalog ' \
+        --prompt='Skills  ' --pointer='› ' --marker='✓ ' \
+        --header='Search any column · Tab toggle · Ctrl-A all · Ctrl-D none · Enter review · Esc cancel' \
+        --bind "$(initial_selection_binding "$MANIFEST"),ctrl-a:select-all,ctrl-d:deselect-all"
+  ); then
+    :
+  else
+    picker_status=$?
+    [[ "$picker_status" == 1 || "$picker_status" == 130 ]] && return 0
+    die "picker failed with exit code $picker_status"
+  fi
+
+  selected="$(cut -f2 <<<"$result")"
+  selected_json="$(printf '%s\n' "$selected" | jq -Rsc 'split("\n") | map(select(length > 0)) | sort')"
+  current_json="$(jq -c '[.skills[] | select(.enabled) | .name] | sort' "$MANIFEST")"
+  if [[ "$selected_json" == "$current_json" ]]; then
+    printf 'No selection changes.\n'
+    return 0
+  fi
+
+  candidate="$(mktemp "${MANIFEST}.tmp.XXXXXX")"
+  TEMP_FILE=$candidate
+  jq --argjson selected "$selected_json" '
+    .skills |= map(.name as $name | .enabled = ($selected | index($name) != null))
+  ' "$MANIFEST" >"$candidate"
+
+  preflight "$candidate" true
+  review_selection "$selected"
+  printf '\nApply these changes? [y/N] '
+  IFS= read -r answer
+  case "$answer" in
+    y | Y | yes | YES) ;;
+    *) rm -- "$candidate"; TEMP_FILE=''; printf 'Cancelled.\n'; return 0 ;;
+  esac
+
+  mv -- "$candidate" "$MANIFEST"
+  TEMP_FILE=''
+  install_missing "$MANIFEST"
+  reconcile "$MANIFEST"
+  printf 'Enabled set updated.\n'
+}
+
+skill_description() {
+  awk '
+    NR == 1 && $0 == "---" { frontmatter = 1; next }
+    frontmatter && $0 == "---" { exit }
+    frontmatter && /^description:[[:space:]]*/ {
+      sub(/^description:[[:space:]]*/, "")
+      if ($0 == ">" || $0 == "|") { multiline = 1; next }
+      gsub(/^['\''"]|['\''"]$/, "")
+      print
+      exit
+    }
+    multiline && /^[[:space:]]+/ {
+      sub(/^[[:space:]]+/, "")
+      printf "%s%s", separator, $0
+      separator = " "
+      next
+    }
+    multiline { print ""; exit }
+  ' "$1" | tr '\t' ' ' | tr -s ' ' | sed 's/[[:space:]]*$//'
+}
+
+inventory() {
+  gh skill list --dir "$CATALOG" \
+    --json skillName,path,sourceURL,version,pinned
+}
+
+add_skills() {
+  local source=$1 selector=${2:-} before after new_items item
+  local name path description install_selector manifest_tmp
+
+  require_command gh
+  require_command jq
+  validate_manifest "$MANIFEST"
+  [[ "$source" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] ||
+    die "source must use OWNER/REPO format"
+  mkdir -p -- "$CATALOG"
+  validate_catalog
+
+  before="$(inventory)"
+  if [[ -n "$selector" ]]; then
+    quiet_skill_install "$source" "$selector" --dir "$CATALOG"
+  else
+    quiet_skill_install "$source" --dir "$CATALOG"
+  fi
+  after="$(inventory)"
+  new_items="$(jq -n --argjson before "$before" --argjson after "$after" '
+    ($before | map(.path)) as $old |
+    $after | map(select(.path as $path | $old | index($path) | not))
+  ')"
+
+  [[ "$(jq 'length' <<<"$new_items")" != 0 ]] || {
+    printf 'No new catalog entries.\n'
+    return 0
+  }
+
+  while IFS= read -r item; do
+    name="$(jq -r '.skillName' <<<"$item")"
+    path="$(jq -r '.path' <<<"$item")"
+    [[ "$name" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] ||
+      die "installed skill has unsupported name: $name"
+    jq -e --arg name "$name" 'all(.skills[]; .name != $name)' "$MANIFEST" >/dev/null ||
+      die "manifest already contains skill: $name"
+    description="$(skill_description "$path/SKILL.md")"
+    install_selector=$name
+    if [[ -n "$selector" && "$(jq 'length' <<<"$new_items")" == 1 ]]; then
+      install_selector=$selector
+    fi
+
+    manifest_tmp="$(mktemp "${MANIFEST}.tmp.XXXXXX")"
+    TEMP_FILE=$manifest_tmp
+    jq \
+      --arg name "$name" \
+      --arg source "$source" \
+      --arg selector "$install_selector" \
+      --arg description "$description" '
+        .skills += [{
+          name: $name,
+          source: $source,
+          selector: $selector,
+          description: $description,
+          enabled: false
+        }] |
+        .skills |= sort_by(.name)
+      ' "$MANIFEST" >"$manifest_tmp"
+    mv -- "$manifest_tmp" "$MANIFEST"
+    TEMP_FILE=''
+    printf 'Added %s to the catalog (disabled).\n' "$name"
+  done < <(jq -c '.[]' <<<"$new_items")
+}
+
+main() {
+  local command=${1:-}
+
+  case "$command" in
+    '') open_picker ;;
+    sync)
+      [[ $# == 1 ]] || { usage; return 2; }
+      require_command jq
+      validate_manifest "$MANIFEST"
+      install_missing "$MANIFEST"
+      reconcile "$MANIFEST"
+      printf 'Skill links synchronized.\n'
+      ;;
+    updates)
+      [[ $# == 1 ]] || { usage; return 2; }
+      require_command gh
+      require_command jq
+      validate_catalog
+      gh skill update --dir "$CATALOG" --dry-run
+      ;;
+    update)
+      [[ $# == 1 ]] || { usage; return 2; }
+      require_command gh
+      require_command jq
+      validate_catalog
+      gh skill update --dir "$CATALOG"
+      ;;
+    add)
+      [[ $# == 2 || $# == 3 ]] || { usage; return 2; }
+      add_skills "$2" "${3:-}"
+      ;;
+    -h | --help)
+      usage
+      ;;
+    *)
+      usage
+      return 2
+      ;;
+  esac
+}
+
+main "$@"

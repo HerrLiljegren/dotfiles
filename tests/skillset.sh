@@ -1,0 +1,210 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
+SCRIPT="$ROOT/bin/skillset"
+TEST_ROOT="$(mktemp -d)"
+MANIFEST="$TEST_ROOT/skills.json"
+CATALOG="$TEST_ROOT/catalog"
+AGENTS_DIR="$TEST_ROOT/agents"
+CLAUDE_DIR="$TEST_ROOT/claude"
+FAKE_BIN="$TEST_ROOT/bin"
+GH_LOG="$TEST_ROOT/gh.log"
+FZF_LOG="$TEST_ROOT/fzf.log"
+
+cleanup() {
+  rm -rf -- "$TEST_ROOT"
+}
+trap cleanup EXIT
+
+fail() {
+  printf 'test failure: %s\n' "$*" >&2
+  exit 1
+}
+
+run_skillset() {
+  SKILLSET_MANIFEST="${SKILLSET_MANIFEST:-$MANIFEST}" \
+  SKILLSET_CATALOG="${SKILLSET_CATALOG:-$CATALOG}" \
+  SKILLSET_AGENTS_DIR="${SKILLSET_AGENTS_DIR:-$AGENTS_DIR}" \
+  SKILLSET_CLAUDE_DIR="${SKILLSET_CLAUDE_DIR:-$CLAUDE_DIR}" \
+  GH_LOG="$GH_LOG" \
+  FZF_LOG="$FZF_LOG" \
+  SKILLSET_COLUMNS=120 \
+  FAKE_GH_FAIL_INSTALL="${FAKE_GH_FAIL_INSTALL:-}" \
+  PATH="$FAKE_BIN:$PATH" \
+    "$SCRIPT" "$@"
+}
+
+write_manifest() {
+  printf '%s\n' \
+    '{' \
+    '  "version": 1,' \
+    '  "skills": [' \
+    '    {"name":"alpha","source":"example/skills","selector":"alpha","description":"Alpha skill","enabled":true},' \
+    '    {"name":"gamma","source":"zeta/more","selector":"gamma","description":"Gamma skill","enabled":true},' \
+    '    {"name":"beta","source":"example/skills","selector":"beta","description":"Beta skill","enabled":false}' \
+    '  ]' \
+    '}' >"$MANIFEST"
+}
+
+install_fixture_skill() {
+  local name=$1 description=${2:-Fixture skill}
+  mkdir -p -- "$CATALOG/$name"
+  printf '%s\n' \
+    '---' \
+    "name: $name" \
+    "description: $description" \
+    '---' >"$CATALOG/$name/SKILL.md"
+}
+
+mkdir -p -- "$FAKE_BIN"
+printf '%s\n' \
+  '#!/usr/bin/env bash' \
+  'set -euo pipefail' \
+  'wanted=",${FAKE_FZF_SELECTED:-},"' \
+  'while IFS= read -r row; do' \
+  '  printf "%s\n" "$row" >>"$FZF_LOG"' \
+  '  first=${row%%$'"'"'\t'"'"'*}' \
+  '  remainder=${row#*$'"'"'\t'"'"'}' \
+  '  name=${remainder%%$'"'"'\t'"'"'*}' \
+  '  [[ -n "$name" ]] || name=$first' \
+  '  if [[ "$wanted" == *",$name,"* ]]; then printf "%s\n" "$row"; fi' \
+  'done' >"$FAKE_BIN/fzf"
+chmod +x "$FAKE_BIN/fzf"
+
+printf '%s\n' \
+  '#!/usr/bin/env bash' \
+  'set -euo pipefail' \
+  'catalog='"'"''"'" \
+  'for ((index=1; index <= $#; index++)); do' \
+  '  if [[ ${!index} == --dir ]]; then next=$((index + 1)); catalog=${!next}; fi' \
+  'done' \
+  'case "${1:-} ${2:-}" in' \
+  '  "skill list")' \
+  '    printf "["' \
+  '    separator='"'"''"'" \
+  '    if [[ -d "$catalog" ]]; then' \
+  '      for path in "$catalog"/*; do' \
+  '        [[ -f "$path/SKILL.md" ]] || continue' \
+  '        name=${path##*/}' \
+  '        printf "%s" "$separator"' \
+  '        jq -cn --arg name "$name" --arg path "$path" '\''{skillName:$name,path:$path,sourceURL:"https://github.com/example/skills",version:"main",pinned:false}'\''' \
+  '        separator=,' \
+  '      done' \
+  '    fi' \
+  '    printf "]\n"' \
+  '    ;;' \
+  '  "skill install")' \
+  '    printf "verbose gh install output\n"' \
+  '    if [[ ${FAKE_GH_FAIL_INSTALL:-} == 1 ]]; then printf "fake install failed\n" >&2; exit 42; fi' \
+  '    selector=${4:-installed}' \
+  '    name=${selector##*/}' \
+  '    name=${name%/SKILL.md}' \
+  '    mkdir -p -- "$catalog/$name"' \
+  '    printf "%s\n" --- "name: $name" "description: >" "  Added from GitHub" "  with folded text." --- >"$catalog/$name/SKILL.md"' \
+  '    ;;' \
+  '  "skill update") printf "%s\n" "$*" >>"$GH_LOG" ;;' \
+  '  *) exit 2 ;;' \
+  'esac' >"$FAKE_BIN/gh"
+chmod +x "$FAKE_BIN/gh"
+
+write_manifest
+install_fixture_skill alpha
+install_fixture_skill beta
+install_fixture_skill gamma
+
+run_skillset sync >/dev/null
+for root in "$AGENTS_DIR" "$CLAUDE_DIR"; do
+  [[ "$(readlink -- "$root/alpha")" == "$CATALOG/alpha" ]] || fail "alpha was not enabled in $root"
+  [[ ! -e "$root/beta" ]] || fail "beta was unexpectedly enabled in $root"
+  [[ "$(readlink -- "$root/gamma")" == "$CATALOG/gamma" ]] || fail "gamma was not enabled in $root"
+done
+
+legacy_alpha="$TEST_ROOT/legacy/alpha"
+mkdir -p -- "$(dirname -- "$legacy_alpha")"
+ln -sfn -- "$legacy_alpha" "$AGENTS_DIR/alpha"
+run_skillset sync >/dev/null
+[[ "$(readlink -- "$AGENTS_DIR/alpha")" == "$CATALOG/alpha" ]] ||
+  fail 'sync did not migrate a managed legacy symlink'
+
+rm -rf -- "$CLAUDE_DIR"
+ln -s -- "$AGENTS_DIR" "$CLAUDE_DIR"
+run_skillset sync >/dev/null
+[[ -d "$CLAUDE_DIR" && ! -L "$CLAUDE_DIR" ]] ||
+  fail 'sync did not migrate the shared Claude skill-directory symlink'
+[[ "$(readlink -- "$CLAUDE_DIR/alpha")" == "$CATALOG/alpha" ]] ||
+  fail 'sync did not populate the migrated Claude skill directory'
+
+before="$(find "$AGENTS_DIR" "$CLAUDE_DIR" -mindepth 1 -maxdepth 1 -printf '%p -> %l\n' | sort)"
+run_skillset sync >/dev/null
+after="$(find "$AGENTS_DIR" "$CLAUDE_DIR" -mindepth 1 -maxdepth 1 -printf '%p -> %l\n' | sort)"
+[[ "$before" == "$after" ]] || fail 'sync was not idempotent'
+
+rm -rf -- "$CATALOG/beta"
+printf 'y\n' | FAKE_FZF_SELECTED='alpha,beta' run_skillset >/dev/null
+mapfile -t picker_input <"$FZF_LOG"
+[[ "${picker_input[0]}" == CREATOR*SKILL*DESCRIPTION*STATUS*SOURCE* ]] ||
+  fail 'picker did not render column headings'
+[[ "${picker_input[1]}" == example*alpha*'Alpha skill'*installed*skills* ]] ||
+  fail 'picker did not render the installed skill row'
+[[ "${picker_input[2]}" == example*beta*'Beta skill'*'not installed'*skills* ]] ||
+  fail 'picker did not group skills or render the missing skill row'
+[[ "${picker_input[3]}" == zeta*gamma*'Gamma skill'*installed*more* ]] ||
+  fail 'picker did not sort creator groups'
+jq -e '[.skills[] | select(.enabled) | .name] == ["alpha", "beta"]' \
+  "$MANIFEST" >/dev/null || fail 'picker did not update the manifest'
+for root in "$AGENTS_DIR" "$CLAUDE_DIR"; do
+  [[ -L "$root/alpha" && -L "$root/beta" ]] || fail "picker did not enable selected skills in $root"
+  [[ ! -e "$root/gamma" ]] || fail "picker did not disable gamma in $root"
+done
+
+conflict_root="$TEST_ROOT/conflict"
+mkdir -p -- "$conflict_root"
+printf 'unmanaged\n' >"$conflict_root/unmanaged"
+if SKILLSET_AGENTS_DIR="$conflict_root" run_skillset sync >"$TEST_ROOT/conflict.out" 2>&1; then
+  fail 'sync accepted unmanaged content'
+fi
+grep -Fq 'unmanaged entry blocks reconciliation' "$TEST_ROOT/conflict.out" ||
+  fail 'sync did not explain the unmanaged conflict'
+
+missing_manifest="$TEST_ROOT/missing.json"
+jq '(.skills[] | select(.name == "gamma") | .enabled) = true' "$MANIFEST" >"$missing_manifest"
+rm -rf -- "$CATALOG/gamma"
+missing_agents="$TEST_ROOT/missing-agents"
+missing_claude="$TEST_ROOT/missing-claude"
+if SKILLSET_MANIFEST="$missing_manifest" \
+  SKILLSET_AGENTS_DIR="$missing_agents" \
+  SKILLSET_CLAUDE_DIR="$missing_claude" \
+  FAKE_GH_FAIL_INSTALL=1 \
+  run_skillset sync >"$TEST_ROOT/missing.out" 2>&1
+then
+  fail 'sync accepted a missing enabled skill'
+fi
+[[ ! -e "$missing_agents" && ! -e "$missing_claude" ]] ||
+  fail 'failed preflight partially changed destinations'
+grep -Fq 'fake install failed' "$TEST_ROOT/missing.out" ||
+  fail 'failed install did not preserve gh diagnostics'
+
+sync_output="$(SKILLSET_MANIFEST="$missing_manifest" \
+SKILLSET_AGENTS_DIR="$missing_agents" \
+SKILLSET_CLAUDE_DIR="$missing_claude" \
+  run_skillset sync)"
+[[ "$sync_output" != *'verbose gh install output'* ]] ||
+  fail 'successful install leaked verbose gh output'
+[[ -f "$CATALOG/gamma/SKILL.md" ]] || fail 'sync did not install a missing catalog skill'
+[[ -L "$missing_agents/gamma" && -L "$missing_claude/gamma" ]] ||
+  fail 'sync did not enable the newly installed skill'
+
+run_skillset add example/skills delta >/dev/null
+jq -e '
+  .skills[] |
+  select(.name == "delta") |
+  (.enabled == false and .description == "Added from GitHub with folded text.")
+' "$MANIFEST" >/dev/null || fail 'add did not record the installed skill'
+
+run_skillset updates >/dev/null
+run_skillset update >/dev/null
+grep -Fq 'skill update --dir' "$GH_LOG" || fail 'update commands were not delegated to gh skill'
+grep -Fq -- '--dry-run' "$GH_LOG" || fail 'updates did not use dry-run'
+
+printf 'skillset behavior tests passed\n'

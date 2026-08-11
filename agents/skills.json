@@ -1,0 +1,278 @@
+{
+  "version": 1,
+  "skills": [
+    {
+      "name": "aspire",
+      "source": "microsoft/aspire-skills",
+      "selector": "skills/aspire/SKILL.md",
+      "description": "Operate Aspire AppHosts, resources, logs, traces, configuration, and deployment workflows.",
+      "enabled": true
+    },
+    {
+      "name": "code-review",
+      "source": "mattpocock/skills",
+      "selector": "code-review",
+      "description": "Review changes against repository standards and the originating specification.",
+      "enabled": true
+    },
+    {
+      "name": "codebase-design",
+      "source": "mattpocock/skills",
+      "selector": "codebase-design",
+      "description": "Design deep modules, interfaces, seams, and testable boundaries.",
+      "enabled": true
+    },
+    {
+      "name": "defuddle",
+      "source": "kepano/obsidian-skills",
+      "selector": "defuddle",
+      "description": "Extract clean Markdown from web pages.",
+      "enabled": true
+    },
+    {
+      "name": "diagnosing-bugs",
+      "source": "mattpocock/skills",
+      "selector": "diagnosing-bugs",
+      "description": "Run a structured diagnosis loop for difficult failures and regressions.",
+      "enabled": true
+    },
+    {
+      "name": "domain-modeling",
+      "source": "mattpocock/skills",
+      "selector": "domain-modeling",
+      "description": "Establish project terminology, concepts, relationships, and decisions.",
+      "enabled": true
+    },
+    {
+      "name": "dotnet-inspect",
+      "source": "richlander/dotnet-inspect",
+      "selector": "skills/dotnet-inspect/SKILL.md",
+      "description": "Query .NET APIs across NuGet packages, platform libraries, and local files.",
+      "enabled": true
+    },
+    {
+      "name": "find-skills",
+      "source": "vercel-labs/skills",
+      "selector": "find-skills",
+      "description": "Discover appropriate installable agent skills.",
+      "enabled": true
+    },
+    {
+      "name": "frontend-design",
+      "source": "anthropics/skills",
+      "selector": "frontend-design",
+      "description": "Create distinctive, polished web interfaces and prototypes.",
+      "enabled": true
+    },
+    {
+      "name": "grill-with-docs",
+      "source": "mattpocock/skills",
+      "selector": "grill-with-docs",
+      "description": "Combine a structured interview with persistent supporting documents.",
+      "enabled": true
+    },
+    {
+      "name": "grilling",
+      "source": "mattpocock/skills",
+      "selector": "grilling",
+      "description": "Stress-test an idea through dependency-ordered questions.",
+      "enabled": true
+    },
+    {
+      "name": "handoff",
+      "source": "mattpocock/skills",
+      "selector": "handoff",
+      "description": "Prepare context for continuing work in another session or agent.",
+      "enabled": true
+    },
+    {
+      "name": "herdr",
+      "source": "ogulcancelik/herdr",
+      "selector": "herdr",
+      "description": "Inspect and control Herdr panes, spaces, tabs, and agents.",
+      "enabled": true
+    },
+    {
+      "name": "implement",
+      "source": "mattpocock/skills",
+      "selector": "implement",
+      "description": "Run an opinionated implementation, review, and commit workflow.",
+      "enabled": false
+    },
+    {
+      "name": "improve",
+      "source": "shadcn/improve",
+      "selector": "improve",
+      "description": "Survey a codebase read-only and produce prioritized implementation plans.",
+      "enabled": true
+    },
+    {
+      "name": "improve-codebase-architecture",
+      "source": "mattpocock/skills",
+      "selector": "improve-codebase-architecture",
+      "description": "Investigate codebase architecture and produce an improvement report.",
+      "enabled": false
+    },
+    {
+      "name": "json-canvas",
+      "source": "kepano/obsidian-skills",
+      "selector": "json-canvas",
+      "description": "Create and edit Obsidian Canvas files.",
+      "enabled": false
+    },
+    {
+      "name": "loop-me",
+      "source": "mattpocock/skills",
+      "selector": "loop-me",
+      "description": "Iterate through completing and checking agent work.",
+      "enabled": false
+    },
+    {
+      "name": "obsidian-bases",
+      "source": "kepano/obsidian-skills",
+      "selector": "obsidian-bases",
+      "description": "Create and edit Obsidian Bases and their views.",
+      "enabled": false
+    },
+    {
+      "name": "obsidian-cli",
+      "source": "kepano/obsidian-skills",
+      "selector": "obsidian-cli",
+      "description": "Operate Obsidian vaults, notes, plugins, themes, and diagnostics.",
+      "enabled": true
+    },
+    {
+      "name": "obsidian-markdown",
+      "source": "kepano/obsidian-skills",
+      "selector": "obsidian-markdown",
+      "description": "Author Obsidian Flavored Markdown.",
+      "enabled": true
+    },
+    {
+      "name": "okf",
+      "source": "scaccogatto/okf-skills",
+      "selector": "okf",
+      "description": "Author and maintain Open Knowledge Format bundles.",
+      "enabled": true
+    },
+    {
+      "name": "ponytail",
+      "source": "DietrichGebert/ponytail",
+      "selector": "ponytail",
+      "description": "Push coding toward the smallest solution that works.",
+      "enabled": true
+    },
+    {
+      "name": "ponytail-audit",
+      "source": "DietrichGebert/ponytail",
+      "selector": "ponytail-audit",
+      "description": "Audit an entire repository for unnecessary complexity.",
+      "enabled": false
+    },
+    {
+      "name": "ponytail-debt",
+      "source": "DietrichGebert/ponytail",
+      "selector": "ponytail-debt",
+      "description": "Collect deliberate ponytail deferrals into a debt ledger.",
+      "enabled": false
+    },
+    {
+      "name": "ponytail-review",
+      "source": "DietrichGebert/ponytail",
+      "selector": "ponytail-review",
+      "description": "Review a diff specifically for removable complexity.",
+      "enabled": true
+    },
+    {
+      "name": "prototype",
+      "source": "mattpocock/skills",
+      "selector": "prototype",
+      "description": "Build throwaway prototypes to answer design questions.",
+      "enabled": true
+    },
+    {
+      "name": "research",
+      "source": "mattpocock/skills",
+      "selector": "research",
+      "description": "Investigate primary sources and capture findings in the repository.",
+      "enabled": true
+    },
+    {
+      "name": "resolving-merge-conflicts",
+      "source": "mattpocock/skills",
+      "selector": "resolving-merge-conflicts",
+      "description": "Resolve an active merge or rebase conflict.",
+      "enabled": true
+    },
+    {
+      "name": "seq-search-and-query",
+      "source": "datalust/seqcli",
+      "selector": "src/SeqCli/Skills/Resources/seq-search-and-query/SKILL.md",
+      "description": "Search and query logs and spans in Seq.",
+      "enabled": true
+    },
+    {
+      "name": "tdd",
+      "source": "mattpocock/skills",
+      "selector": "tdd",
+      "description": "Drive development through red-green-refactor and integration tests.",
+      "enabled": true
+    },
+    {
+      "name": "teach",
+      "source": "mattpocock/skills",
+      "selector": "teach",
+      "description": "Build teaching material and guided explanations.",
+      "enabled": false
+    },
+    {
+      "name": "thermo-nuclear-code-quality-review",
+      "source": "cursor/plugins",
+      "selector": "thermos/skills/thermo-nuclear-code-quality-review/SKILL.md",
+      "description": "Run an extremely strict maintainability and abstraction review.",
+      "enabled": true
+    },
+    {
+      "name": "to-spec",
+      "source": "mattpocock/skills",
+      "selector": "to-spec",
+      "description": "Turn discussion or requirements into an implementation specification.",
+      "enabled": true
+    },
+    {
+      "name": "to-tickets",
+      "source": "mattpocock/skills",
+      "selector": "to-tickets",
+      "description": "Decompose a specification into tracker-ready tickets.",
+      "enabled": true
+    },
+    {
+      "name": "triage",
+      "source": "mattpocock/skills",
+      "selector": "triage",
+      "description": "Investigate and classify tracker issues.",
+      "enabled": true
+    },
+    {
+      "name": "validate",
+      "source": "scaccogatto/okf-skills",
+      "selector": "validate",
+      "description": "Validate or migrate an Open Knowledge Format bundle.",
+      "enabled": true
+    },
+    {
+      "name": "visualize",
+      "source": "scaccogatto/okf-skills",
+      "selector": "visualize",
+      "description": "Generate an interactive graph from an Open Knowledge Format bundle.",
+      "enabled": false
+    },
+    {
+      "name": "wayfinder",
+      "source": "mattpocock/skills",
+      "selector": "wayfinder",
+      "description": "Explore an unfamiliar codebase and plot implementation direction.",
+      "enabled": true
+    }
+  ]
+}
