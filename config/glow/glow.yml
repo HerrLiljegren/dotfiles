@@ -1,5 +1,5 @@
 style: auto
 mouse: true
-pager: true
+pager: false
+tui: true
 all: false
-
