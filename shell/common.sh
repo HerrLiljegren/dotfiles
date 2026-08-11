@@ -2,8 +2,8 @@
 
 for bin_dir in "$HOME/.local/bin" "$HOME/.devcontainers/bin" "$HOME/.cargo/bin"; do
   case ":$PATH:" in
-    *":$bin_dir:"*) ;;
-    *) PATH="$bin_dir:$PATH" ;;
+  *":$bin_dir:"*) ;;
+  *) PATH="$bin_dir:$PATH" ;;
   esac
 done
 unset bin_dir
@@ -33,25 +33,26 @@ dotnet_trust_dir="$HOME/.aspnet/dev-certs/trust"
 if [ -d "$dotnet_trust_dir" ]; then
   SSL_CERT_DIR="${SSL_CERT_DIR:-/etc/ssl/certs}"
   case ":$SSL_CERT_DIR:" in
-    *":$dotnet_trust_dir:"*) ;;
-    *) SSL_CERT_DIR="$dotnet_trust_dir:$SSL_CERT_DIR" ;;
+  *":$dotnet_trust_dir:"*) ;;
+  *) SSL_CERT_DIR="$dotnet_trust_dir:$SSL_CERT_DIR" ;;
   esac
   export SSL_CERT_DIR
 fi
 unset dotnet_trust_dir
 
 # Directory navigation and listing.
-alias ..='cd ..'             # Move up one directory.
-alias ...='cd ../..'         # Move up two directories.
-alias ....='cd ../../..'     # Move up three directories.
-alias ll='ls -alF'           # List all files with details and type indicators.
-alias la='ls -lAFh'          # List almost all files with human-readable sizes.
+alias -- -='cd -'        # Move to the previous directory.
+alias ..='cd ..'         # Move up one directory.
+alias ...='cd ../..'     # Move up two directories.
+alias ....='cd ../../..' # Move up three directories.
+alias ll='ls -alF'       # List all files with details and type indicators.
+alias la='ls -lAFh'      # List almost all files with human-readable sizes.
 
 if command -v eza >/dev/null 2>&1; then
-  alias l='eza -lh --icons --git --group-directories-first'    # Detailed list.
-  alias la='eza -lah --icons --git --group-directories-first'  # Include hidden files.
-  alias ll='eza -lah --icons --git --group-directories-first'  # Detailed list with hidden files.
-  alias lt='eza --tree --level=4 --git-ignore --icons'         # Four-level tree, respecting Git ignores.
+  alias l='eza -lh --icons --git --group-directories-first'                # Detailed list.
+  alias la='eza -lah --icons --git --group-directories-first'              # Include hidden files.
+  alias ll='eza -lah --icons --git --group-directories-first'              # Detailed list with hidden files.
+  alias lt='eza --tree --level=4 --git-ignore --icons'                     # Four-level tree, respecting Git ignores.
   alias lta='eza --tree --level=4 --all --icons --group-directories-first' # Tree including hidden files.
 fi
 
@@ -60,11 +61,11 @@ fi
 alias ghelp='git-aliases' # Open the Git alias guide.
 
 # General command-line shortcuts.
-alias c='clear'       # Clear the terminal.
-alias h='history'     # Show command history.
-alias md='mkdir -p'  # Create directories, including missing parents.
-alias dfh='df -h'    # Show filesystem usage with human-readable sizes.
-alias duh='du -sh'   # Show the total size of a path.
+alias c='clear'     # Clear the terminal.
+alias h='history'   # Show command history.
+alias md='mkdir -p' # Create directories, including missing parents.
+alias dfh='df -h'   # Show filesystem usage with human-readable sizes.
+alias duh='du -sh'  # Show the total size of a path.
 
 take() {
   # Create a directory and enter it.
@@ -98,6 +99,10 @@ fi
 
 if command -v bat >/dev/null 2>&1; then
   alias cat='bat' # Show files with syntax highlighting and paging.
+fi
+
+if command -v hunk >/dev/null 2>&1; then
+  alias hd='hunk diff' # Show diffs with syntax highlighting.
 fi
 
 DOTFILES_LOCAL_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles/local.sh"
