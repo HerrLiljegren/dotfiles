@@ -68,15 +68,13 @@ manifest_rows() {
 
 preflight() {
   local manifest=$1 allow_missing=${2:-false}
-  local catalog_root name source selector description enabled expected
+  local catalog_root name source selector description enabled expected destination
   local root entry resolved
-  declare -A names=()
 
   validate_manifest "$manifest"
   catalog_root="$(realpath -m -- "$CATALOG")"
 
   while IFS=$'\t' read -r name source selector description enabled; do
-    names["$name"]=1
     expected="$catalog_root/$name"
     if [[ "$allow_missing" == false && "$enabled" == true && ! -f "$expected/SKILL.md" ]]; then
       die "enabled skill is not installed: $name"
@@ -93,11 +91,13 @@ preflight() {
     [[ ! -e "$root" || -d "$root" ]] || die "skill destination is not a directory: $root"
     [[ -d "$root" ]] || continue
 
-    while IFS= read -r -d '' entry; do
-      name=${entry##*/}
-      [[ -n "${names[$name]:-}" ]] || die "unmanaged entry blocks reconciliation: $entry"
-      [[ -L "$entry" ]] || die "non-symlink entry blocks reconciliation: $entry"
-    done < <(find "$root" -mindepth 1 -maxdepth 1 -print0)
+    while IFS=$'\t' read -r name source selector description enabled; do
+      expected="$catalog_root/$name"
+      destination="$root/$name"
+      [[ -e "$destination" || -L "$destination" ]] || continue
+      [[ -L "$destination" && "$(realpath -m -- "$destination")" == "$expected" ]] ||
+        die "foreign entry conflicts with managed skill: $destination"
+    done < <(manifest_rows "$manifest")
   done
 }
 
@@ -291,7 +291,10 @@ run_update_check_with_spinner() {
 run_update_signals() {
   local source group_total skill_count result_dir status regular_output
   local exact_count total_skills checked_skills=0 checked_repositories=0 started=$SECONDS
+  local ok_mark='✓'
   local -a sources=()
+
+  [[ -t 2 && ${TERM:-dumb} != dumb ]] && ok_mark=$'\033[38;2;166;227;161m✓\033[0m'
 
   mapfile -t sources < <(jq -r '.skills | sort_by(.source) | group_by(.source)[] | .[0].source' "$MANIFEST")
   group_total=${#sources[@]}
@@ -332,7 +335,7 @@ run_update_signals() {
         done <"$result_dir/exact.updates"
       fi
     else
-      printf '  ✓  %-29s  %d/%d checked\n' "$source" "$skill_count" "$skill_count" >&2
+      printf '  %s  %-29s  %d/%d checked\n' "$ok_mark" "$source" "$skill_count" "$skill_count" >&2
     fi
     ((checked_skills += skill_count))
     ((checked_repositories += 1))

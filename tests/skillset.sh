@@ -133,12 +133,15 @@ for root in "$AGENTS_DIR" "$CLAUDE_DIR"; do
   [[ "$(readlink -- "$root/gamma")" == "$CATALOG/gamma" ]] || fail "gamma was not enabled in $root"
 done
 
-legacy_alpha="$TEST_ROOT/legacy/alpha"
-mkdir -p -- "$(dirname -- "$legacy_alpha")"
-ln -sfn -- "$legacy_alpha" "$AGENTS_DIR/alpha"
+for root in "$AGENTS_DIR" "$CLAUDE_DIR"; do
+  mkdir -p -- "$root/tengella-style"
+  printf 'foreign skill\n' >"$root/tengella-style/SKILL.md"
+done
 run_skillset sync >/dev/null
-[[ "$(readlink -- "$AGENTS_DIR/alpha")" == "$CATALOG/alpha" ]] ||
-  fail 'sync did not migrate a managed legacy symlink'
+for root in "$AGENTS_DIR" "$CLAUDE_DIR"; do
+  [[ -f "$root/tengella-style/SKILL.md" ]] ||
+    fail "sync changed a foreign skill in $root"
+done
 
 rm -rf -- "$CLAUDE_DIR"
 ln -s -- "$AGENTS_DIR" "$CLAUDE_DIR"
@@ -175,12 +178,15 @@ done
 
 conflict_root="$TEST_ROOT/conflict"
 mkdir -p -- "$conflict_root"
-printf 'unmanaged\n' >"$conflict_root/unmanaged"
+mkdir -p -- "$conflict_root/alpha"
+printf 'foreign alpha\n' >"$conflict_root/alpha/SKILL.md"
 if SKILLSET_AGENTS_DIR="$conflict_root" run_skillset sync >"$TEST_ROOT/conflict.out" 2>&1; then
-  fail 'sync accepted unmanaged content'
+  fail 'sync accepted a foreign entry with a managed name'
 fi
-grep -Fq 'unmanaged entry blocks reconciliation' "$TEST_ROOT/conflict.out" ||
-  fail 'sync did not explain the unmanaged conflict'
+grep -Fq 'foreign entry conflicts with managed skill' "$TEST_ROOT/conflict.out" ||
+  fail 'sync did not explain the same-name conflict'
+[[ -f "$conflict_root/alpha/SKILL.md" ]] ||
+  fail 'failed preflight changed the foreign same-name skill'
 
 missing_manifest="$TEST_ROOT/missing.json"
 jq '(.skills[] | select(.name == "gamma") | .enabled) = true' "$MANIFEST" >"$missing_manifest"

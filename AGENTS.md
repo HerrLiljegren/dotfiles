@@ -16,3 +16,17 @@ WSL, and Linux-based devcontainers.
 - Run `bash tests/install.sh` after changing installation behavior or managed
   paths.
 - Prefer explicit file mappings over recursive discovery or a profile system.
+
+## Skillset ownership
+
+- Keep only the public desired-state manifest in this repository. Materialized
+  skill contents belong in the external catalog managed through `gh skill`.
+- `skillset` owns only manifest-listed names and projects enabled catalog
+  entries as symlinks into both `.agents/skills` and `.claude/skills`.
+- Preserve differently named entries owned by other installers. Refuse a
+  same-name foreign file, directory, or symlink before changing either harness
+  directory.
+- Keep GitHub discovery, installation, and updates delegated to `gh skill`; do
+  not add alternate source backends or fallback behavior.
+- Run `bash tests/skillset.sh` after changing manifest, catalog, ownership, or
+  reconciliation behavior.

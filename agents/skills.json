@@ -111,7 +111,7 @@
       "source": "mattpocock/skills",
       "selector": "implement",
       "description": "Run an opinionated implementation, review, and commit workflow.",
-      "enabled": false
+      "enabled": true
     },
     {
       "name": "improve",
@@ -125,7 +125,7 @@
       "source": "mattpocock/skills",
       "selector": "improve-codebase-architecture",
       "description": "Investigate codebase architecture and produce an improvement report.",
-      "enabled": false
+      "enabled": true
     },
     {
       "name": "json-canvas",
