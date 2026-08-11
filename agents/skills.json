@@ -2,6 +2,13 @@
   "version": 1,
   "skills": [
     {
+      "name": "ask-matt",
+      "source": "mattpocock/skills",
+      "selector": "engineering/ask-matt",
+      "description": "Ask which skill or flow fits your situation. A router over the skills in this repo.",
+      "enabled": true
+    },
+    {
       "name": "aspire",
       "source": "microsoft/aspire-skills",
       "selector": "skills/aspire/SKILL.md",
@@ -20,6 +27,13 @@
       "source": "mattpocock/skills",
       "selector": "codebase-design",
       "description": "Design deep modules, interfaces, seams, and testable boundaries.",
+      "enabled": true
+    },
+    {
+      "name": "codex-resets",
+      "source": "HerrLiljegren/skills",
+      "selector": "skills/productivity/codex-resets/SKILL.md",
+      "description": "Safely show available Codex reset credits.",
       "enabled": true
     },
     {
@@ -261,6 +275,13 @@
       "enabled": true
     },
     {
+      "name": "vim-helper",
+      "source": "HerrLiljegren/skills",
+      "selector": "skills/productivity/vim-helper/SKILL.md",
+      "description": "Answer Vim, Neovim, and Zed Vim-mode questions using the real editor configuration.",
+      "enabled": true
+    },
+    {
       "name": "visualize",
       "source": "scaccogatto/okf-skills",
       "selector": "visualize",
@@ -268,10 +289,31 @@
       "enabled": false
     },
     {
+      "name": "wait-what",
+      "source": "mattpocock/skills",
+      "selector": "productivity/wait-what",
+      "description": "Stop. That last message did not land — re-pitch it.",
+      "enabled": true
+    },
+    {
       "name": "wayfinder",
       "source": "mattpocock/skills",
       "selector": "wayfinder",
       "description": "Explore an unfamiliar codebase and plot implementation direction.",
+      "enabled": true
+    },
+    {
+      "name": "where-were-we",
+      "source": "HerrLiljegren/skills",
+      "selector": "skills/productivity/where-were-we/SKILL.md",
+      "description": "Reconstruct interrupted work and identify the next useful step.",
+      "enabled": true
+    },
+    {
+      "name": "writing-for-agents",
+      "source": "mattpocock/skills",
+      "selector": "productivity/writing-for-agents",
+      "description": "Writing documents for agents. Use when creating or editing skills, or modifying AGENTS.md or CLAUDE.md.",
       "enabled": true
     }
   ]

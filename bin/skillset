@@ -113,6 +113,70 @@ quiet_skill_install() {
   fi
 }
 
+discover_skills() {
+  local output status
+
+  if output="$(gh skill install "$1" --dir "$CATALOG" 2>&1)"; then
+    awk -F '\t' 'NF >= 2' <<<"$output"
+  else
+    status=$?
+    printf '%s\n' "$output" >&2
+    return "$status"
+  fi
+}
+
+available_skill_rows() {
+  local discovered=$1 selector description name
+  declare -A known=()
+
+  while IFS= read -r name; do
+    known["$name"]=1
+  done < <(jq -r '.skills[].name' "$MANIFEST")
+
+  while IFS=$'\t' read -r selector description; do
+    name=${selector##*/}
+    [[ -n "${known[$name]:-}" ]] && continue
+    printf '%s\t%s\t%s\n' "$name" "$selector" "$description"
+  done <<<"$discovered"
+}
+
+pick_skills_to_add() {
+  local rows=$1 result picker_status terminal_width skill_width description_width
+  local display name selector description
+
+  skill_width="$(awk -F '\t' 'length($1) > max { max = length($1) } END { print max }' <<<"$rows")"
+  ((skill_width >= 5)) || skill_width=5
+  terminal_width="${SKILLSET_COLUMNS:-$(tput cols)}"
+  description_width=$((terminal_width - skill_width - 4))
+  ((description_width >= 24)) || description_width=24
+
+  if result=$(
+    {
+      printf -v display "%-${skill_width}s  %s" SKILL DESCRIPTION
+      printf '%s\t\t\t\n' "$display"
+      while IFS=$'\t' read -r name selector description; do
+        if ((${#description} > description_width)); then
+          description="${description:0:description_width-1}…"
+        fi
+        printf -v display "%-${skill_width}s  %s" "$name" "$description"
+        printf '%s\t%s\t%s\t%s\n' "$display" "$name" "$selector" "$description"
+      done <<<"$rows"
+    } |
+      fzf --multi --sync --reverse --border=rounded --ansi --no-hscroll \
+        --delimiter=$'\t' --with-nth=1 --header-lines=1 \
+        --layout=reverse --list-label=' Available skills ' \
+        --prompt='Add  ' --pointer='› ' --marker='✓ ' \
+        --header='Search · Tab toggle · Ctrl-A all · Ctrl-D none · Enter add · Esc cancel' \
+        --bind 'ctrl-a:select-all,ctrl-d:deselect-all'
+  ); then
+    printf '%s\n' "$result"
+  else
+    picker_status=$?
+    [[ "$picker_status" == 1 || "$picker_status" == 130 ]] && return 0
+    die "picker failed with exit code $picker_status"
+  fi
+}
+
 metadata_tree_sha() {
   awk '
     /^metadata:[[:space:]]*$/ { metadata = 1; next }
@@ -129,6 +193,7 @@ inspect_exact_path_updates() {
   local name source selector current_sha latest_sha
 
   while IFS=$'\t' read -r name source selector; do
+    printf 'Checking exact-path skill: %s (%s)\n' "$name" "$source" >&2
     TEMP_DIR="$(mktemp -d /tmp/skillset-update.XXXXXX)"
     quiet_skill_install "$source" "$selector" --dir "$TEMP_DIR"
     [[ -f "$TEMP_DIR/$name/SKILL.md" ]] ||
@@ -149,9 +214,143 @@ inspect_exact_path_updates() {
   ' "$MANIFEST")
 }
 
+check_update_group() {
+  local source=$1 result_dir=$2 name selector output status=0
+  local current_sha latest_sha install_dir
+  local -a names=()
+
+  mapfile -t names < <(jq -r --arg source "$source" '
+    .skills[] |
+    select(.source == $source and (.selector | endswith("/SKILL.md") | not)) |
+    .name
+  ' "$MANIFEST")
+  if ((${#names[@]} > 0)); then
+    if gh skill update "${names[@]}" --dir "$CATALOG" --dry-run >"$result_dir/regular.out" 2>&1; then
+      printf '0\n' >"$result_dir/regular.status"
+    else
+      printf '%d\n' "$?" >"$result_dir/regular.status"
+      status=1
+    fi
+  fi
+
+  while IFS=$'\t' read -r name selector; do
+    [[ -n "$name" ]] || continue
+    install_dir="$(mktemp -d /tmp/skillset-update.XXXXXX)"
+    if output="$(gh skill install "$source" "$selector" --dir "$install_dir" 2>&1)"; then
+      if [[ ! -f "$install_dir/$name/SKILL.md" ]]; then
+        printf '%s: gh skill installed an unexpected layout\n' "$name" >>"$result_dir/exact.errors"
+        status=1
+      else
+        current_sha="$(metadata_tree_sha "$CATALOG/$name/SKILL.md")"
+        latest_sha="$(metadata_tree_sha "$install_dir/$name/SKILL.md")"
+        if [[ -z "$current_sha" || -z "$latest_sha" ]]; then
+          printf '%s: update metadata is missing\n' "$name" >>"$result_dir/exact.errors"
+          status=1
+        elif [[ "$current_sha" != "$latest_sha" ]]; then
+          printf '%s\t%s\n' "$name" "$selector" >>"$result_dir/exact.updates"
+        fi
+      fi
+    else
+      printf '%s: %s\n' "$name" "$output" >>"$result_dir/exact.errors"
+      status=1
+    fi
+    rm -rf -- "$install_dir"
+  done < <(jq -r --arg source "$source" '
+    .skills[] |
+    select(.source == $source and (.selector | endswith("/SKILL.md"))) |
+    [.name, .selector] |
+    @tsv
+  ' "$MANIFEST")
+
+  return "$status"
+}
+
+run_update_check_with_spinner() {
+  local source=$1 skill_count=$2 result_dir=$3 checked_skills=$4 total_skills=$5
+  local checked_repositories=$6 repository_total=$7 started=$8
+  local pid frame_index=0 status frames=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
+
+  check_update_group "$source" "$result_dir" &
+  pid=$!
+  if [[ -t 2 && ${TERM:-dumb} != dumb ]]; then
+    while kill -0 "$pid" 2>/dev/null; do
+      printf '\r\033[2K  \033[38;2;137;180;250m%s\033[0m  %-29s  \033[38;2;108;112;134m%d skills\033[0m  checking' \
+        "${frames[frame_index % ${#frames[@]}]}" "$source" "$skill_count" >&2
+      printf '\n\033[2K\n\033[2K  \033[38;2;205;214;244m%d/%d skills\033[0m  \033[38;2;203;166;247m%d/%d repositories\033[0m  \033[38;2;108;112;134m%ds\033[0m\033[2A\r' \
+        "$checked_skills" "$total_skills" "$checked_repositories" "$repository_total" \
+        "$((SECONDS - started))" >&2
+      ((frame_index += 1))
+      sleep 0.1
+    done
+    printf '\r\033[2K\n\033[2K\n\033[2K\033[2A\r' >&2
+  fi
+  if wait "$pid"; then status=0; else status=$?; fi
+  return "$status"
+}
+
+run_update_signals() {
+  local source group_total skill_count result_dir status regular_output
+  local exact_count total_skills checked_skills=0 checked_repositories=0 started=$SECONDS
+  local -a sources=()
+
+  mapfile -t sources < <(jq -r '.skills | sort_by(.source) | group_by(.source)[] | .[0].source' "$MANIFEST")
+  group_total=${#sources[@]}
+  total_skills="$(jq '.skills | length' "$MANIFEST")"
+
+  for source in "${sources[@]}"; do
+    skill_count="$(jq -r --arg source "$source" '[.skills[] | select(.source == $source)] | length' "$MANIFEST")"
+    result_dir="$(mktemp -d /tmp/skillset-update-group.XXXXXX)"
+    if run_update_check_with_spinner \
+      "$source" "$skill_count" "$result_dir" "$checked_skills" "$total_skills" \
+      "$checked_repositories" "$group_total" "$started"
+    then
+      status=0
+    else
+      status=$?
+    fi
+
+    regular_output=''
+    if [[ -f "$result_dir/regular.out" ]]; then
+      regular_output="$(sed \
+        -e '/^All skills are up to date\.$/d' \
+        -e '/^All skills are up to date\. Use --force without --dry-run to re-download anyway\.$/d' \
+        "$result_dir/regular.out")"
+    fi
+    exact_count=0
+    [[ ! -f "$result_dir/exact.updates" ]] || exact_count="$(wc -l <"$result_dir/exact.updates")"
+
+    if ((status != 0)); then
+      printf '  ✕  %-29s  %d/%d checked  failed\n' "$source" "$skill_count" "$skill_count" >&2
+      [[ -z "$regular_output" ]] || sed 's/^/      /' <<<"$regular_output" >&2
+      [[ ! -s "$result_dir/exact.errors" ]] || sed 's/^/      /' "$result_dir/exact.errors" >&2
+    elif [[ -n "$regular_output" || "$exact_count" != 0 ]]; then
+      printf '  ↑  %-29s  %d/%d checked  updates available\n' "$source" "$skill_count" "$skill_count" >&2
+      [[ -z "$regular_output" ]] || sed 's/^/      /' <<<"$regular_output"
+      if [[ -f "$result_dir/exact.updates" ]]; then
+        while IFS=$'\t' read -r name selector; do
+          printf '      ↑ %s\n' "$name"
+        done <"$result_dir/exact.updates"
+      fi
+    else
+      printf '  ✓  %-29s  %d/%d checked\n' "$source" "$skill_count" "$skill_count" >&2
+    fi
+    ((checked_skills += skill_count))
+    ((checked_repositories += 1))
+    rm -rf -- "$result_dir"
+  done
+
+  printf '\n%d skills checked across %d repositories in %ds.\n' \
+    "$total_skills" "$group_total" "$((SECONDS - started))" >&2
+}
+
 run_updates() {
   local dry_run=$1 output status exact_updates name source selector answer
   local -a regular_names=() command=(gh skill update)
+
+  if [[ "$dry_run" == true ]]; then
+    run_update_signals
+    return
+  fi
 
   mapfile -t regular_names < <(jq -r '
     .skills[] | select(.selector | endswith("/SKILL.md") | not) | .name
@@ -159,6 +358,7 @@ run_updates() {
 
   exact_updates="$(inspect_exact_path_updates)"
   if ((${#regular_names[@]} > 0)); then
+    printf 'Checking discoverable skills: %d\n' "${#regular_names[@]}" >&2
     command+=("${regular_names[@]}" --dir "$CATALOG")
     [[ "$dry_run" == false ]] || command+=(--dry-run)
     if output="$("${command[@]}" 2>&1)"; then
@@ -221,8 +421,8 @@ validate_catalog() {
   [[ -d "$CATALOG" ]] || return 0
   while IFS= read -r -d '' entry; do
     name=${entry##*/}
-    [[ -n "${names[$name]:-}" ]] || die "unmanaged catalog entry: $entry"
     [[ -d "$entry" && -f "$entry/SKILL.md" ]] || die "invalid catalog entry: $entry"
+    [[ -n "${names[$name]:-}" ]] || die "unmanaged catalog entry: $entry"
   done < <(find "$CATALOG" -mindepth 1 -maxdepth 1 -print0)
 }
 
@@ -420,8 +620,9 @@ inventory() {
 }
 
 add_skills() {
-  local source=$1 selector=${2:-} before after new_items item
-  local name path description install_selector manifest_tmp
+  local source=$1 selector=${2:-} before after new_items item discovered rows selected
+  local name path description install_selector manifest_tmp enable_new=false display
+  declare -A selected_selectors=()
 
   require_command gh
   require_command jq
@@ -435,7 +636,18 @@ add_skills() {
   if [[ -n "$selector" ]]; then
     quiet_skill_install "$source" "$selector" --dir "$CATALOG"
   else
-    quiet_skill_install "$source" --dir "$CATALOG"
+    require_command fzf
+    discovered="$(discover_skills "$source")"
+    [[ -n "$discovered" ]] || die "no skills discovered in: $source"
+    rows="$(available_skill_rows "$discovered")"
+    [[ -n "$rows" ]] || { printf 'No new catalog entries.\n'; return 0; }
+    selected="$(pick_skills_to_add "$rows")"
+    [[ -n "$selected" ]] || { printf 'No skills selected.\n'; return 0; }
+    enable_new=true
+    while IFS=$'\t' read -r display name install_selector description; do
+      selected_selectors["$name"]=$install_selector
+      quiet_skill_install "$source" "$install_selector" --dir "$CATALOG"
+    done <<<"$selected"
   fi
   after="$(inventory)"
   new_items="$(jq -n --argjson before "$before" --argjson after "$after" '
@@ -449,8 +661,8 @@ add_skills() {
   }
 
   while IFS= read -r item; do
-    name="$(jq -r '.skillName' <<<"$item")"
     path="$(jq -r '.path' <<<"$item")"
+    name=${path##*/}
     [[ "$name" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] ||
       die "installed skill has unsupported name: $name"
     jq -e --arg name "$name" 'all(.skills[]; .name != $name)' "$MANIFEST" >/dev/null ||
@@ -459,6 +671,8 @@ add_skills() {
     install_selector=$name
     if [[ -n "$selector" && "$(jq 'length' <<<"$new_items")" == 1 ]]; then
       install_selector=$selector
+    elif [[ "$enable_new" == true ]]; then
+      install_selector=${selected_selectors[$name]}
     fi
 
     manifest_tmp="$(mktemp "${MANIFEST}.tmp.XXXXXX")"
@@ -467,20 +681,27 @@ add_skills() {
       --arg name "$name" \
       --arg source "$source" \
       --arg selector "$install_selector" \
-      --arg description "$description" '
+      --arg description "$description" \
+      --argjson enabled "$enable_new" '
         .skills += [{
           name: $name,
           source: $source,
           selector: $selector,
           description: $description,
-          enabled: false
+          enabled: $enabled
         }] |
         .skills |= sort_by(.name)
       ' "$MANIFEST" >"$manifest_tmp"
     mv -- "$manifest_tmp" "$MANIFEST"
     TEMP_FILE=''
-    printf 'Added %s to the catalog (disabled).\n' "$name"
+    if [[ "$enable_new" == true ]]; then
+      printf 'Added and enabled %s.\n' "$name"
+    else
+      printf 'Added %s to the catalog (disabled).\n' "$name"
+    fi
   done < <(jq -c '.[]' <<<"$new_items")
+
+  [[ "$enable_new" == false ]] || reconcile "$MANIFEST"
 }
 
 main() {

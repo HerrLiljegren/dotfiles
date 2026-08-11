@@ -89,7 +89,7 @@ printf '%s\n' \
   '        [[ -f "$path/SKILL.md" ]] || continue' \
   '        name=${path##*/}' \
   '        printf "%s" "$separator"' \
-  '        jq -cn --arg name "$name" --arg path "$path" '\''{skillName:$name,path:$path,sourceURL:"https://github.com/example/skills",version:"main",pinned:false}'\''' \
+  '        jq -cn --arg name "productivity/$name" --arg path "$path" '\''{skillName:$name,path:$path,sourceURL:"https://github.com/example/skills",version:"main",pinned:false}'\''' \
   '        separator=,' \
   '      done' \
   '    fi' \
@@ -98,10 +98,15 @@ printf '%s\n' \
   '  "skill install")' \
   '    printf "verbose gh install output\n"' \
   '    if [[ ${FAKE_GH_FAIL_INSTALL:-} == 1 ]]; then printf "fake install failed\n" >&2; exit 42; fi' \
-  '    selector=${4:-installed}' \
+  '    install_skill() {' \
+  '      local name=$1' \
+  '      mkdir -p -- "$catalog/$name"' \
+  '      printf "%s\n" --- "name: $name" "description: >" "  Added from GitHub" "  with folded text." "metadata:" "    github-tree-sha: new-tree-sha" --- >"$catalog/$name/SKILL.md"' \
+  '    }' \
+  '    selector=${4:-}' \
+  '    [[ -n $selector && $selector != --* ]] || { printf "group/bundle-one\tFirst bundled skill\ngroup/bundle-two\tSecond bundled skill\n"; exit; }' \
   '    if [[ $selector == */SKILL.md ]]; then parent=${selector%/SKILL.md}; name=${parent##*/}; else name=${selector##*/}; fi' \
-  '    mkdir -p -- "$catalog/$name"' \
-  '    printf "%s\n" --- "name: $name" "description: >" "  Added from GitHub" "  with folded text." "metadata:" "    github-tree-sha: new-tree-sha" --- >"$catalog/$name/SKILL.md"' \
+  '    install_skill "$name"' \
   '    ;;' \
   '  "skill update") printf "%s\n" "$*" >>"$GH_LOG" ;;' \
   '  *) exit 2 ;;' \
@@ -212,9 +217,32 @@ jq -e '
   (.enabled == false and .description == "Added from GitHub with folded text.")
 ' "$MANIFEST" >/dev/null || fail 'add did not record the installed skill'
 
-updates_output="$(run_skillset updates)"
-[[ "$updates_output" == *'Update available: exact'* ]] ||
+FAKE_FZF_SELECTED='bundle-one' run_skillset add example/bundle >/dev/null
+grep -Fq 'bundle-one' "$FZF_LOG" || fail 'repository add picker omitted the first discovery'
+grep -Fq 'bundle-two' "$FZF_LOG" || fail 'repository add picker omitted the second discovery'
+jq -e '
+  [.skills[] | select(.source == "example/bundle") | {name, enabled}] == [
+    {name: "bundle-one", enabled: true}
+  ]
+' "$MANIFEST" >/dev/null || fail 'repository add did not register the selected skill as enabled'
+[[ -f "$CATALOG/bundle-one/SKILL.md" && ! -e "$CATALOG/bundle-two" ]] ||
+  fail 'repository add did not install only the selected skill'
+for root in "$AGENTS_DIR" "$CLAUDE_DIR"; do
+  [[ -L "$root/bundle-one" ]] || fail "repository add did not enable the selected skill in $root"
+done
+
+run_skillset updates >"$TEST_ROOT/updates.out" 2>"$TEST_ROOT/updates.progress"
+updates_output="$(<"$TEST_ROOT/updates.out")"
+grep -Fq 'example/exact' "$TEST_ROOT/updates.progress" ||
+  fail 'updates did not report exact-path repository progress'
+grep -Fq 'example/skills' "$TEST_ROOT/updates.progress" ||
+  fail 'updates did not report discoverable repository progress'
+grep -Fq 'skills checked across' "$TEST_ROOT/updates.progress" ||
+  fail 'updates did not report the final progress summary'
+[[ "$updates_output" == *'↑ exact'* ]] ||
   fail 'updates did not report the exact-path update'
+[[ "$updates_output" != *'All skills are up to date.'* ]] ||
+  fail 'updates leaked current skill output'
 printf 'y\n' | run_skillset update >/dev/null
 grep -Fq 'skill update ' "$GH_LOG" || fail 'update commands were not delegated to gh skill'
 grep -Fq -- '--dry-run' "$GH_LOG" || fail 'updates did not use dry-run'
