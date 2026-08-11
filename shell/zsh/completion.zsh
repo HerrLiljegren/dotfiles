@@ -4,7 +4,6 @@ autoload -Uz compinit
 mkdir -p -- "${XDG_CACHE_HOME:-$HOME/.cache}/zsh"
 compinit -d "${XDG_CACHE_HOME:-$HOME/.cache}/zsh/zcompdump"
 
-export FZF_DEFAULT_OPTS="${FZF_DEFAULT_OPTS:---height=40% --layout=reverse --border}"
 export FZF_CTRL_R_OPTS="--border-label=' history ' --tiebreak=index"
 export FZF_COMPLETION_TRIGGER='**'
 export FZF_COMPLETION_PATH_OPTS='--preview="bat --color=always --style=numbers --line-range=:500 {}" --preview-window=right:75%'

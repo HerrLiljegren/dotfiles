@@ -19,7 +19,14 @@ fi
 
 export PAGER="${PAGER:-less}"
 export LESS="${LESS:--FRX}"
-export FZF_DEFAULT_OPTS="${FZF_DEFAULT_OPTS:---height=40% --layout=reverse --border}"
+fzf_default_opts='--height=40% --layout=reverse --border'
+fzf_default_opts="$fzf_default_opts --color=fg:#cdd6f4,bg:-1,hl:#f9e2af"
+fzf_default_opts="$fzf_default_opts --color=fg+:#cdd6f4,bg+:#313244,hl+:#f9e2af"
+fzf_default_opts="$fzf_default_opts --color=info:#a6adc8,prompt:#cba6f7,pointer:#89b4fa"
+fzf_default_opts="$fzf_default_opts --color=marker:#a6e3a1,spinner:#f5e0dc,header:#a6adc8"
+fzf_default_opts="$fzf_default_opts --color=border:#45475a,label:#89b4fa"
+export FZF_DEFAULT_OPTS="${FZF_DEFAULT_OPTS:-$fzf_default_opts}"
+unset fzf_default_opts
 
 # Let OpenSSL-based tools discover the per-user .NET development certificate.
 dotnet_trust_dir="$HOME/.aspnet/dev-certs/trust"
