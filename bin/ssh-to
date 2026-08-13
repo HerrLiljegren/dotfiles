@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+config="${SSH_FZF_CONFIG:-$HOME/.ssh/config}"
+
+[[ -r "$config" ]] || {
+  printf 'ssh-to: config not readable: %s\n' "$config" >&2
+  exit 1
+}
+hosts="$({
+  awk '
+    tolower($1) == "host" {
+      for (i = 2; i <= NF; i++)
+        if ($i !~ /[*?!]/ && !seen[$i]++) print $i
+    }
+  ' "$config" | sort -f
+})"
+
+blue=$'\033[38;2;137;180;250m'
+mauve=$'\033[38;2;203;166;247m'
+green=$'\033[38;2;166;227;161m'
+peach=$'\033[38;2;250;179;135m'
+muted=$'\033[38;2;166;173;200m'
+bold=$'\033[1m'
+reset=$'\033[0m'
+
+inventory() {
+  local host resolved hostname user port identity destination rows=''
+  local name_width=4 destination_width=11 user_width=4 identity_width=8
+
+  while IFS= read -r host; do
+    resolved="$(ssh -G -F "$config" "$host" 2>/dev/null)"
+    IFS=$'\t' read -r hostname user port identity < <(
+      awk '
+        $1 == "hostname" && !hostname { hostname=$2 }
+        $1 == "user" && !user { user=$2 }
+        $1 == "port" && !port { port=$2 }
+        $1 == "identityfile" && !identity { identity=$2 }
+        END { printf "%s\t%s\t%s\t%s\n", hostname, user, port, identity }
+      ' <<<"$resolved"
+    )
+    [[ "$identity" != "$HOME/"* ]] || identity="~/${identity#"$HOME/"}"
+    destination="$hostname:$port"
+    rows+="${rows:+$'\n'}$host"$'\t'"$destination"$'\t'"$user"$'\t'"$identity"
+    (( ${#host} > name_width )) && name_width=${#host}
+    (( ${#destination} > destination_width )) && destination_width=${#destination}
+    (( ${#user} > user_width )) && user_width=${#user}
+    (( ${#identity} > identity_width )) && identity_width=${#identity}
+  done <<<"$hosts"
+
+  printf '\t%b󰒋%b  %b%-*s%b  %b󰇅%b  %b%-*s%b  %b%b  %b%-*s%b  %b󰌆%b  %b%-*s%b\n' \
+    "$muted" "$reset" "$muted$bold" "$name_width" ALIAS "$reset" \
+    "$muted" "$reset" "$muted$bold" "$destination_width" TARGET "$reset" \
+    "$muted" "$reset" "$muted$bold" "$user_width" USER "$reset" \
+    "$muted" "$reset" "$muted$bold" "$identity_width" KEY "$reset"
+
+  while IFS=$'\t' read -r host destination user identity; do
+    printf '%s\t%b󰒋%b  %b%-*s%b  %b󰇅%b  %b%-*s%b  %b%b  %b%-*s%b  %b󰌆%b  %b%-*s%b\n' \
+      "$host" "$mauve" "$reset" "$blue$bold" "$name_width" "$host" "$reset" \
+      "$mauve" "$reset" "$mauve" "$destination_width" "$destination" "$reset" \
+      "$green" "$reset" "$green" "$user_width" "$user" "$reset" \
+      "$peach" "$reset" "$peach" "$identity_width" "$identity" "$reset"
+  done <<<"$rows"
+}
+
+command -v fzf >/dev/null 2>&1 || {
+  printf 'ssh-to: fzf is required\n' >&2
+  exit 1
+}
+
+selection="$(inventory | fzf \
+  --ansi \
+  --height=60% \
+  --prompt='  ' \
+  --pointer='› ' \
+  --info=inline-right \
+  --border-label=' 󰒋 SSH inventory ' \
+  --header-lines=1 \
+  --delimiter=$'\t' \
+  --with-nth=2.. \
+  --no-hscroll)" || exit 0
+
+target="${selection%%$'\t'*}"
+[[ -n "$target" ]] && exec ssh "$target"

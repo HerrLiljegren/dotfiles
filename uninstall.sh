@@ -62,6 +62,7 @@ unlink_path "$ROOT/config/worktrunk/config.toml" "$XDG_CONFIG_HOME/worktrunk/con
 unlink_path "$ROOT/git/ignore" "$XDG_CONFIG_HOME/git/ignore"
 unlink_path "$ROOT/bin/git-aliases" "$HOME/.local/bin/git-aliases"
 unlink_path "$ROOT/bin/skillset" "$HOME/.local/bin/skillset"
+unlink_path "$ROOT/bin/ssh-to" "$HOME/.local/bin/ssh-to"
 unlink_path "$ROOT/agents/AGENTS.md" "$HOME/.agents/AGENTS.md"
 unlink_path "$ROOT/agents/AGENTS.md" "$HOME/.codex/AGENTS.md"
 unlink_path "$ROOT/agents/AGENTS.md" "$HOME/.claude/CLAUDE.md"
