@@ -54,6 +54,7 @@ unlink_path "$ROOT/config/bat/themes/Catppuccin Mocha.tmTheme" "$XDG_CONFIG_HOME
 unlink_path "$ROOT/config/bat/config" "$XDG_CONFIG_HOME/bat/config"
 unlink_path "$ROOT/config/delta/config.gitconfig" "$XDG_CONFIG_HOME/delta/config.gitconfig"
 unlink_path "$ROOT/config/glow/glow.yml" "$XDG_CONFIG_HOME/glow/glow.yml"
+unlink_path "$ROOT/config/ghostty" "$XDG_CONFIG_HOME/ghostty"
 unlink_path "$ROOT/config/herdr/config.toml" "$XDG_CONFIG_HOME/herdr/config.toml"
 unlink_path "$ROOT/config/hunk/config.toml" "$XDG_CONFIG_HOME/hunk/config.toml"
 unlink_path "$ROOT/config/nvim" "$XDG_CONFIG_HOME/nvim"
