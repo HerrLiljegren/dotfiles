@@ -2,6 +2,7 @@
 
 setopt auto_cd interactive_comments
 alias reload='exec zsh'
+alias -g C='| wl-copy'
 
 eval "$(zoxide init --cmd cd zsh)"
 eval "$(starship init zsh)"
