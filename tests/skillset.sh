@@ -31,6 +31,8 @@ run_skillset() {
   FZF_LOG="$FZF_LOG" \
   SKILLSET_COLUMNS=120 \
   FAKE_GH_FAIL_INSTALL="${FAKE_GH_FAIL_INSTALL:-}" \
+  FAKE_GH_REQUIRE_EXACT_PARALLEL="${FAKE_GH_REQUIRE_EXACT_PARALLEL:-}" \
+  FAKE_GH_REQUIRE_PARALLEL="${FAKE_GH_REQUIRE_PARALLEL:-}" \
   PATH="$FAKE_BIN:$PATH" \
     "$SCRIPT" "$@"
 }
@@ -98,17 +100,47 @@ printf '%s\n' \
   '  "skill install")' \
   '    printf "verbose gh install output\n"' \
   '    if [[ ${FAKE_GH_FAIL_INSTALL:-} == 1 ]]; then printf "fake install failed\n" >&2; exit 42; fi' \
+  '    selector=${4:-}' \
+  '    if [[ ${FAKE_GH_REQUIRE_EXACT_PARALLEL:-} == 1 && $selector == */SKILL.md ]]; then' \
+  '      marker="$GH_LOG.exact-parallel.$BASHPID"' \
+  '      : >"$marker"' \
+  '      ready=0' \
+  '      for ((attempt=0; attempt < 200; attempt++)); do' \
+  '        count=0' \
+  '        for candidate in "$GH_LOG".exact-parallel.*; do' \
+  '          [[ ! -e $candidate ]] || count=$((count + 1))' \
+  '        done' \
+  '        if ((count >= 2)); then ready=1; break; fi' \
+  '        sleep 0.01' \
+  '      done' \
+  '      ((ready)) || { printf "same-source exact checks did not overlap\n" >&2; exit 9; }' \
+  '    fi' \
   '    install_skill() {' \
   '      local name=$1' \
   '      mkdir -p -- "$catalog/$name"' \
   '      printf "%s\n" --- "name: $name" "description: >" "  Added from GitHub" "  with folded text." "metadata:" "    github-tree-sha: new-tree-sha" --- >"$catalog/$name/SKILL.md"' \
   '    }' \
-  '    selector=${4:-}' \
   '    [[ -n $selector && $selector != --* ]] || { printf "group/bundle-one\tFirst bundled skill\ngroup/bundle-two\tSecond bundled skill\n"; exit; }' \
   '    if [[ $selector == */SKILL.md ]]; then parent=${selector%/SKILL.md}; name=${parent##*/}; else name=${selector##*/}; fi' \
   '    install_skill "$name"' \
   '    ;;' \
-  '  "skill update") printf "%s\n" "$*" >>"$GH_LOG" ;;' \
+  '  "skill update")' \
+  '    printf "%s\n" "$*" >>"$GH_LOG"' \
+  '    if [[ ${FAKE_GH_REQUIRE_PARALLEL:-} == 1 ]]; then' \
+  '      marker="$GH_LOG.parallel.$BASHPID"' \
+  '      : >"$marker"' \
+  '      ready=0' \
+  '      for ((attempt=0; attempt < 200; attempt++)); do' \
+  '        count=0' \
+  '        for candidate in "$GH_LOG".parallel.*; do' \
+  '          [[ ! -e $candidate ]] || count=$((count + 1))' \
+  '        done' \
+  '        if ((count >= 2)); then ready=1; break; fi' \
+  '        sleep 0.01' \
+  '      done' \
+  '      ((ready)) || { printf "parallel update check did not overlap\n" >&2; exit 9; }' \
+  '    fi' \
+  '    ;;' \
   '  *) exit 2 ;;' \
   'esac' >"$FAKE_BIN/gh"
 chmod +x "$FAKE_BIN/gh"
@@ -125,6 +157,20 @@ printf '%s\n' \
   '    github-tree-sha: old-tree-sha' \
   '---' >"$CATALOG/exact/SKILL.md"
 install_fixture_skill gamma
+
+help_output="$(run_skillset --help)"
+[[ "$help_output" == *'Choose which catalog skills are enabled'* ]] ||
+  fail 'help did not explain the interactive picker'
+[[ "$help_output" == *'Example: skillset sync'* ]] ||
+  fail 'help did not include a sync example'
+[[ "$help_output" == *'Example: skillset updates'* ]] ||
+  fail 'help did not include an updates example'
+[[ "$help_output" == *'Example: skillset update'* ]] ||
+  fail 'help did not include an update example'
+[[ "$help_output" == *'Example: skillset add mattpocock/skills'* ]] ||
+  fail 'help did not include a repository add example'
+[[ "$help_output" == *'Example: skillset add richlander/dotnet-inspect dotnet-inspect'* ]] ||
+  fail 'help did not include a selector add example'
 
 run_skillset sync >/dev/null
 for root in "$AGENTS_DIR" "$CLAUDE_DIR"; do
@@ -157,7 +203,7 @@ after="$(find "$AGENTS_DIR" "$CLAUDE_DIR" -mindepth 1 -maxdepth 1 -printf '%p ->
 [[ "$before" == "$after" ]] || fail 'sync was not idempotent'
 
 rm -rf -- "$CATALOG/beta"
-printf 'y\n' | FAKE_FZF_SELECTED='alpha,beta' run_skillset >/dev/null
+printf '\n' | FAKE_FZF_SELECTED='alpha,beta' run_skillset >/dev/null
 mapfile -t picker_input <"$FZF_LOG"
 [[ "${picker_input[0]}" == CREATOR*SKILL*DESCRIPTION*STATUS*SOURCE* ]] ||
   fail 'picker did not render column headings'
@@ -175,6 +221,10 @@ for root in "$AGENTS_DIR" "$CLAUDE_DIR"; do
   [[ -L "$root/alpha" && -L "$root/beta" ]] || fail "picker did not enable selected skills in $root"
   [[ ! -e "$root/gamma" ]] || fail "picker did not disable gamma in $root"
 done
+
+printf '\033' | FAKE_FZF_SELECTED='alpha' run_skillset >/dev/null
+jq -e '[.skills[] | select(.enabled) | .name] == ["alpha", "beta"]' \
+  "$MANIFEST" >/dev/null || fail 'Esc did not cancel the picker review'
 
 conflict_root="$TEST_ROOT/conflict"
 mkdir -p -- "$conflict_root"
@@ -223,7 +273,7 @@ jq -e '
   (.enabled == false and .description == "Added from GitHub with folded text.")
 ' "$MANIFEST" >/dev/null || fail 'add did not record the installed skill'
 
-FAKE_FZF_SELECTED='bundle-one' run_skillset add example/bundle >/dev/null
+printf '\n' | FAKE_FZF_SELECTED='bundle-one' run_skillset add example/bundle >/dev/null
 grep -Fq 'bundle-one' "$FZF_LOG" || fail 'repository add picker omitted the first discovery'
 grep -Fq 'bundle-two' "$FZF_LOG" || fail 'repository add picker omitted the second discovery'
 jq -e '
@@ -237,7 +287,28 @@ for root in "$AGENTS_DIR" "$CLAUDE_DIR"; do
   [[ -L "$root/bundle-one" ]] || fail "repository add did not enable the selected skill in $root"
 done
 
-run_skillset updates >"$TEST_ROOT/updates.out" 2>"$TEST_ROOT/updates.progress"
+parallel_manifest="$TEST_ROOT/parallel.json"
+parallel_catalog="$TEST_ROOT/parallel-catalog"
+mkdir -p -- "$parallel_catalog/exact-one" "$parallel_catalog/exact-two"
+printf '%s\n' \
+  '{"version":1,"skills":[' \
+  '  {"name":"exact-one","source":"example/parallel","selector":"one/exact-one/SKILL.md","enabled":false},' \
+  '  {"name":"exact-two","source":"example/parallel","selector":"two/exact-two/SKILL.md","enabled":false}' \
+  ']}' >"$parallel_manifest"
+for name in exact-one exact-two; do
+  printf '%s\n' --- "name: $name" metadata: '    github-tree-sha: old-tree-sha' --- \
+    >"$parallel_catalog/$name/SKILL.md"
+done
+FAKE_GH_REQUIRE_EXACT_PARALLEL=1 \
+SKILLSET_MANIFEST="$parallel_manifest" \
+SKILLSET_CATALOG="$parallel_catalog" \
+  run_skillset updates >/dev/null 2>"$TEST_ROOT/parallel.progress"
+if grep -Fq 'failed' "$TEST_ROOT/parallel.progress"; then
+  fail 'same-source exact-path checks did not run concurrently'
+fi
+
+FAKE_GH_REQUIRE_PARALLEL=1 run_skillset updates \
+  >"$TEST_ROOT/updates.out" 2>"$TEST_ROOT/updates.progress"
 updates_output="$(<"$TEST_ROOT/updates.out")"
 grep -Fq 'example/exact' "$TEST_ROOT/updates.progress" ||
   fail 'updates did not report exact-path repository progress'
@@ -249,7 +320,7 @@ grep -Fq 'skills checked across' "$TEST_ROOT/updates.progress" ||
   fail 'updates did not report the exact-path update'
 [[ "$updates_output" != *'All skills are up to date.'* ]] ||
   fail 'updates leaked current skill output'
-printf 'y\n' | run_skillset update >/dev/null
+printf '\n' | run_skillset update >/dev/null
 grep -Fq 'skill update ' "$GH_LOG" || fail 'update commands were not delegated to gh skill'
 grep -Fq -- '--dry-run' "$GH_LOG" || fail 'updates did not use dry-run'
 grep -Fq 'github-tree-sha: new-tree-sha' "$CATALOG/exact/SKILL.md" ||

@@ -9,20 +9,65 @@ AGENTS_SKILLS="${SKILLSET_AGENTS_DIR:-$HOME/.agents/skills}"
 CLAUDE_SKILLS="${SKILLSET_CLAUDE_DIR:-$HOME/.claude/skills}"
 TEMP_FILE=''
 TEMP_DIR=''
+BACKGROUND_PIDS=()
 
 cleanup() {
+  local pid
+  for pid in "${BACKGROUND_PIDS[@]}"; do
+    kill "$pid" 2>/dev/null || true
+  done
+  for pid in "${BACKGROUND_PIDS[@]}"; do
+    wait "$pid" 2>/dev/null || true
+  done
   [[ -z "$TEMP_FILE" || ! -e "$TEMP_FILE" ]] || rm -- "$TEMP_FILE"
   [[ -z "$TEMP_DIR" || ! -d "$TEMP_DIR" ]] || rm -rf -- "$TEMP_DIR"
 }
 trap cleanup EXIT
 
 usage() {
-  cat >&2 <<'EOF'
-usage: skillset
-       skillset sync
-       skillset updates
-       skillset update
-       skillset add OWNER/REPO [SKILL]
+  cat <<'EOF'
+skillset — manage a portable catalog of GitHub skills
+
+Usage
+  skillset
+  skillset sync
+  skillset updates
+  skillset update
+  skillset add OWNER/REPO [SELECTOR]
+
+Commands
+  (no command)
+      Choose which catalog skills are enabled using the interactive picker.
+      Saves the selection, installs missing catalog entries, and updates links.
+      Example: skillset
+
+  sync
+      Restore the manifest on this machine: install missing catalog entries,
+      then link enabled skills into the agent and Claude skill directories.
+      Example: skillset sync
+
+  updates
+      Check every catalog source for upstream changes without modifying files.
+      Reports only available updates and failures.
+      Example: skillset updates
+
+  update
+      Apply available upstream changes. Updates sourced from a specific
+      SKILL.md path ask for confirmation before they are installed.
+      Example: skillset update
+
+  add OWNER/REPO
+      Discover a repository's skills, choose them in a picker, then add,
+      install, and enable the selection.
+      Example: skillset add mattpocock/skills
+
+  add OWNER/REPO SELECTOR
+      Add and install one named skill or SKILL.md path, initially disabled.
+      Example: skillset add richlander/dotnet-inspect dotnet-inspect
+
+Options
+  -h, --help
+      Show this help.
 EOF
 }
 
@@ -33,6 +78,25 @@ die() {
 
 require_command() {
   command -v "$1" >/dev/null 2>&1 || die "$1 is required"
+}
+
+confirm_yes() {
+  local prompt=$1 key rest
+
+  while true; do
+    printf '%s [Y/n]  Enter yes · Esc no  ' "$prompt"
+    if ! IFS= read -rsn1 key; then
+      printf '\n'
+      return 1
+    fi
+    case "$key" in
+      '') printf '\n'; return 0 ;;
+      $'\e') printf '\n'; return 1 ;;
+      y | Y) IFS= read -r rest || true; printf '\n'; return 0 ;;
+      n | N) IFS= read -r rest || true; printf '\n'; return 1 ;;
+      *) printf '\nUse Enter, y, n, or Esc.\n' ;;
+    esac
+  done
 }
 
 validate_manifest() {
@@ -164,9 +228,11 @@ pick_skills_to_add() {
     } |
       fzf --multi --sync --reverse --border=rounded --ansi --no-hscroll \
         --delimiter=$'\t' --with-nth=1 --header-lines=1 \
-        --layout=reverse --list-label=' Available skills ' \
+        --layout=reverse --border-label=' skillset · add ' \
+        --list-label=' Available skills ' \
         --prompt='Add  ' --pointer='› ' --marker='✓ ' \
-        --header='Search · Tab toggle · Ctrl-A all · Ctrl-D none · Enter add · Esc cancel' \
+        --footer=$'\n  Selected skills will be installed and enabled\n  Search · Tab toggle · Ctrl-A all · Ctrl-D none · Enter review · Esc cancel' \
+        --footer-border=top \
         --bind 'ctrl-a:select-all,ctrl-d:deselect-all'
   ); then
     printf '%s\n' "$result"
@@ -214,10 +280,32 @@ inspect_exact_path_updates() {
   ' "$MANIFEST")
 }
 
+check_exact_update() {
+  local source=$1 name=$2 selector=$3 result_dir=$4
+  local output current_sha latest_sha install_dir
+
+  install_dir="$(mktemp -d /tmp/skillset-update.XXXXXX)"
+  if output="$(gh skill install "$source" "$selector" --dir "$install_dir" 2>&1)"; then
+    if [[ ! -f "$install_dir/$name/SKILL.md" ]]; then
+      printf '%s: gh skill installed an unexpected layout\n' "$name" >"$result_dir/error"
+    else
+      current_sha="$(metadata_tree_sha "$CATALOG/$name/SKILL.md")"
+      latest_sha="$(metadata_tree_sha "$install_dir/$name/SKILL.md")"
+      if [[ -z "$current_sha" || -z "$latest_sha" ]]; then
+        printf '%s: update metadata is missing\n' "$name" >"$result_dir/error"
+      elif [[ "$current_sha" != "$latest_sha" ]]; then
+        printf '%s\t%s\n' "$name" "$selector" >"$result_dir/update"
+      fi
+    fi
+  else
+    printf '%s: %s\n' "$name" "$output" >"$result_dir/error"
+  fi
+  rm -rf -- "$install_dir"
+}
+
 check_update_group() {
-  local source=$1 result_dir=$2 name selector output status=0
-  local current_sha latest_sha install_dir
-  local -a names=()
+  local source=$1 result_dir=$2 name selector status=0 index exact_dir
+  local -a names=() exact_pids=() exact_dirs=()
 
   mapfile -t names < <(jq -r --arg source "$source" '
     .skills[] |
@@ -235,26 +323,11 @@ check_update_group() {
 
   while IFS=$'\t' read -r name selector; do
     [[ -n "$name" ]] || continue
-    install_dir="$(mktemp -d /tmp/skillset-update.XXXXXX)"
-    if output="$(gh skill install "$source" "$selector" --dir "$install_dir" 2>&1)"; then
-      if [[ ! -f "$install_dir/$name/SKILL.md" ]]; then
-        printf '%s: gh skill installed an unexpected layout\n' "$name" >>"$result_dir/exact.errors"
-        status=1
-      else
-        current_sha="$(metadata_tree_sha "$CATALOG/$name/SKILL.md")"
-        latest_sha="$(metadata_tree_sha "$install_dir/$name/SKILL.md")"
-        if [[ -z "$current_sha" || -z "$latest_sha" ]]; then
-          printf '%s: update metadata is missing\n' "$name" >>"$result_dir/exact.errors"
-          status=1
-        elif [[ "$current_sha" != "$latest_sha" ]]; then
-          printf '%s\t%s\n' "$name" "$selector" >>"$result_dir/exact.updates"
-        fi
-      fi
-    else
-      printf '%s: %s\n' "$name" "$output" >>"$result_dir/exact.errors"
-      status=1
-    fi
-    rm -rf -- "$install_dir"
+    exact_dir="$result_dir/exact-${#exact_pids[@]}"
+    mkdir -- "$exact_dir"
+    check_exact_update "$source" "$name" "$selector" "$exact_dir" &
+    exact_pids+=("$!")
+    exact_dirs+=("$exact_dir")
   done < <(jq -r --arg source "$source" '
     .skills[] |
     select(.source == $source and (.selector | endswith("/SKILL.md"))) |
@@ -262,92 +335,129 @@ check_update_group() {
     @tsv
   ' "$MANIFEST")
 
+  for ((index = 0; index < ${#exact_pids[@]}; index++)); do
+    wait "${exact_pids[index]}" || status=1
+    exact_dir=${exact_dirs[index]}
+    if [[ -f "$exact_dir/error" ]]; then
+      cat "$exact_dir/error" >>"$result_dir/exact.errors"
+      status=1
+    fi
+    [[ ! -f "$exact_dir/update" ]] || cat "$exact_dir/update" >>"$result_dir/exact.updates"
+  done
+
   return "$status"
 }
 
-run_update_check_with_spinner() {
-  local source=$1 skill_count=$2 result_dir=$3 checked_skills=$4 total_skills=$5
-  local checked_repositories=$6 repository_total=$7 started=$8
-  local pid frame_index=0 status frames=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
+render_update_result() {
+  local source=$1 skill_count=$2 result_dir=$3 status=$4
+  local regular_output='' exact_count=0 ok_mark='✓' update_mark='↑' error_mark='✕'
 
-  check_update_group "$source" "$result_dir" &
-  pid=$!
-  if [[ -t 2 && ${TERM:-dumb} != dumb ]]; then
-    while kill -0 "$pid" 2>/dev/null; do
-      printf '\r\033[2K  \033[38;2;137;180;250m%s\033[0m  %-29s  \033[38;2;108;112;134m%d skills\033[0m  checking' \
-        "${frames[frame_index % ${#frames[@]}]}" "$source" "$skill_count" >&2
-      printf '\n\033[2K\n\033[2K  \033[38;2;205;214;244m%d/%d skills\033[0m  \033[38;2;203;166;247m%d/%d repositories\033[0m  \033[38;2;108;112;134m%ds\033[0m\033[2A\r' \
-        "$checked_skills" "$total_skills" "$checked_repositories" "$repository_total" \
-        "$((SECONDS - started))" >&2
-      ((frame_index += 1))
-      sleep 0.1
-    done
-    printf '\r\033[2K\n\033[2K\n\033[2K\033[2A\r' >&2
+  if [[ -t 2 && ${TERM:-dumb} != dumb && -z ${NO_COLOR:-} ]]; then
+    ok_mark=$'\033[38;2;166;227;161m✓\033[0m'
+    update_mark=$'\033[38;2;250;179;135m↑\033[0m'
+    error_mark=$'\033[38;2;243;139;168m✕\033[0m'
   fi
-  if wait "$pid"; then status=0; else status=$?; fi
-  return "$status"
+  if [[ -f "$result_dir/regular.out" ]]; then
+    regular_output="$(sed \
+      -e '/^All skills are up to date\.$/d' \
+      -e '/^All skills are up to date\. Use --force without --dry-run to re-download anyway\.$/d' \
+      "$result_dir/regular.out")"
+  fi
+  [[ ! -f "$result_dir/exact.updates" ]] || exact_count="$(wc -l <"$result_dir/exact.updates")"
+
+  if ((status != 0)); then
+    printf '  %s  %-29s  %d/%d checked  failed\n' "$error_mark" "$source" "$skill_count" "$skill_count" >&2
+    [[ -z "$regular_output" ]] || sed 's/^/      /' <<<"$regular_output" >&2
+    [[ ! -s "$result_dir/exact.errors" ]] || sed 's/^/      /' "$result_dir/exact.errors" >&2
+  elif [[ -n "$regular_output" || "$exact_count" != 0 ]]; then
+    printf '  %s  %-29s  %d/%d checked  updates available\n' "$update_mark" "$source" "$skill_count" "$skill_count" >&2
+    [[ -z "$regular_output" ]] || sed 's/^/      /' <<<"$regular_output"
+    if [[ -f "$result_dir/exact.updates" ]]; then
+      while IFS=$'\t' read -r name selector; do
+        printf '      ↑ %s\n' "$name"
+      done <"$result_dir/exact.updates"
+    fi
+  else
+    printf '  %s  %-29s  %d/%d checked\n' "$ok_mark" "$source" "$skill_count" "$skill_count" >&2
+  fi
 }
 
 run_update_signals() {
-  local source group_total skill_count result_dir status regular_output
-  local exact_count total_skills checked_skills=0 checked_repositories=0 started=$SECONDS
-  local ok_mark='✓'
-  local -a sources=()
-
-  [[ -t 2 && ${TERM:-dumb} != dumb ]] && ok_mark=$'\033[38;2;166;227;161m✓\033[0m'
+  local max_parallel=8 group_total total_skills checked_skills=0 checked_repositories=0
+  local started=$SECONDS next=0 active=0 completed=0 index source skill_count result_dir status
+  local frame_index=0 dynamic_visible=false found frames=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
+  local -a sources=() skill_counts=() result_dirs=() pids=() processed=()
 
   mapfile -t sources < <(jq -r '.skills | sort_by(.source) | group_by(.source)[] | .[0].source' "$MANIFEST")
   group_total=${#sources[@]}
   total_skills="$(jq '.skills | length' "$MANIFEST")"
+  TEMP_DIR="$(mktemp -d /tmp/skillset-updates.XXXXXX)"
 
-  for source in "${sources[@]}"; do
-    skill_count="$(jq -r --arg source "$source" '[.skills[] | select(.source == $source)] | length' "$MANIFEST")"
-    result_dir="$(mktemp -d /tmp/skillset-update-group.XXXXXX)"
-    if run_update_check_with_spinner \
-      "$source" "$skill_count" "$result_dir" "$checked_skills" "$total_skills" \
-      "$checked_repositories" "$group_total" "$started"
-    then
-      status=0
-    else
-      status=$?
-    fi
+  while ((completed < group_total)); do
+    while ((active < max_parallel && next < group_total)); do
+      source=${sources[next]}
+      skill_count="$(jq -r --arg source "$source" '[.skills[] | select(.source == $source)] | length' "$MANIFEST")"
+      result_dir="$TEMP_DIR/$next"
+      mkdir -- "$result_dir"
+      skill_counts[next]=$skill_count
+      result_dirs[next]=$result_dir
+      processed[next]=false
+      (
+        if check_update_group "$source" "$result_dir"; then status=0; else status=$?; fi
+        printf '%d\n' "$status" >"$result_dir/status"
+      ) &
+      pids[next]=$!
+      BACKGROUND_PIDS+=("${pids[next]}")
+      next=$((next + 1))
+      active=$((active + 1))
+    done
 
-    regular_output=''
-    if [[ -f "$result_dir/regular.out" ]]; then
-      regular_output="$(sed \
-        -e '/^All skills are up to date\.$/d' \
-        -e '/^All skills are up to date\. Use --force without --dry-run to re-download anyway\.$/d' \
-        "$result_dir/regular.out")"
-    fi
-    exact_count=0
-    [[ ! -f "$result_dir/exact.updates" ]] || exact_count="$(wc -l <"$result_dir/exact.updates")"
-
-    if ((status != 0)); then
-      printf '  ✕  %-29s  %d/%d checked  failed\n' "$source" "$skill_count" "$skill_count" >&2
-      [[ -z "$regular_output" ]] || sed 's/^/      /' <<<"$regular_output" >&2
-      [[ ! -s "$result_dir/exact.errors" ]] || sed 's/^/      /' "$result_dir/exact.errors" >&2
-    elif [[ -n "$regular_output" || "$exact_count" != 0 ]]; then
-      printf '  ↑  %-29s  %d/%d checked  updates available\n' "$source" "$skill_count" "$skill_count" >&2
-      [[ -z "$regular_output" ]] || sed 's/^/      /' <<<"$regular_output"
-      if [[ -f "$result_dir/exact.updates" ]]; then
-        while IFS=$'\t' read -r name selector; do
-          printf '      ↑ %s\n' "$name"
-        done <"$result_dir/exact.updates"
+    found=false
+    for ((index = 0; index < next; index++)); do
+      [[ ${processed[index]} == false && -s ${result_dirs[index]}/status ]] || continue
+      if [[ "$dynamic_visible" == true ]]; then
+        printf '\r\033[2K\n\033[2K\n\033[2K\033[2A\r' >&2
+        dynamic_visible=false
       fi
-    else
-      printf '  %s  %-29s  %d/%d checked\n' "$ok_mark" "$source" "$skill_count" "$skill_count" >&2
+      wait "${pids[index]}" || true
+      status="$(<"${result_dirs[index]}/status")"
+      render_update_result "${sources[index]}" "${skill_counts[index]}" "${result_dirs[index]}" "$status"
+      processed[index]=true
+      active=$((active - 1))
+      completed=$((completed + 1))
+      checked_repositories=$((checked_repositories + 1))
+      checked_skills=$((checked_skills + skill_counts[index]))
+      found=true
+    done
+
+    if ((active < max_parallel && next < group_total)); then
+      continue
     fi
-    ((checked_skills += skill_count))
-    ((checked_repositories += 1))
-    rm -rf -- "$result_dir"
+
+    if ((completed < group_total)); then
+      if [[ -t 2 && ${TERM:-dumb} != dumb && -z ${NO_COLOR:-} ]]; then
+        printf '\r\033[2K  \033[38;2;137;180;250m%s\033[0m  checking %d repositories' \
+          "${frames[frame_index % ${#frames[@]}]}" "$active" >&2
+        printf '\n\033[2K\n\033[2K  \033[38;2;205;214;244m%d/%d skills\033[0m  \033[38;2;203;166;247m%d/%d repositories\033[0m  \033[38;2;108;112;134m%ds\033[0m\033[2A\r' \
+          "$checked_skills" "$total_skills" "$checked_repositories" "$group_total" \
+          "$((SECONDS - started))" >&2
+        dynamic_visible=true
+        frame_index=$((frame_index + 1))
+      fi
+      [[ "$found" == true ]] || sleep 0.1
+    fi
   done
 
+  [[ "$dynamic_visible" != true ]] || printf '\r\033[2K\n\033[2K\n\033[2K\033[2A\r' >&2
+  BACKGROUND_PIDS=()
+  rm -rf -- "$TEMP_DIR"
+  TEMP_DIR=''
   printf '\n%d skills checked across %d repositories in %ds.\n' \
     "$total_skills" "$group_total" "$((SECONDS - started))" >&2
 }
 
 run_updates() {
-  local dry_run=$1 output status exact_updates name source selector answer
+  local dry_run=$1 output status exact_updates name source selector
   local -a regular_names=() command=(gh skill update)
 
   if [[ "$dry_run" == true ]]; then
@@ -387,9 +497,11 @@ run_updates() {
   done <<<"$exact_updates"
   [[ "$dry_run" == true || -z "$exact_updates" ]] && return 0
 
-  printf '\nUpdate exact-path skills? [y/N] '
-  IFS= read -r answer || answer=''
-  [[ "$answer" == [yY] ]] || { printf 'Skipped exact-path updates.\n'; return 0; }
+  printf '\n'
+  confirm_yes 'Update exact-path skills?' || {
+    printf 'Skipped exact-path updates.\n'
+    return 0
+  }
 
   while IFS=$'\t' read -r name source selector; do
     quiet_skill_install "$source" "$selector" --dir "$CATALOG" --force
@@ -542,21 +654,22 @@ review_selection() {
 }
 
 open_picker() {
-  local result selected selected_json current_json candidate answer picker_status
+  local result selected selected_json current_json candidate picker_status
 
   require_command jq
   require_command fzf
   validate_manifest "$MANIFEST"
   [[ "$(jq '.skills | length' "$MANIFEST")" != 0 ]] ||
-    die "catalog is empty; use skillset add OWNER/REPO [SKILL]"
+    die "catalog is empty; use skillset add OWNER/REPO [SELECTOR]"
 
   if result=$(
     picker_rows |
       fzf --multi --sync --reverse --border=rounded --ansi --no-hscroll \
         --delimiter=$'\t' --with-nth=1 --header-lines=1 \
-        --layout=reverse --list-label=' Catalog ' \
+        --layout=reverse --border-label=' skillset · catalog ' --list-label=' Catalog ' \
         --prompt='Skills  ' --pointer='› ' --marker='✓ ' \
-        --header='Search any column · Tab toggle · Ctrl-A all · Ctrl-D none · Enter review · Esc cancel' \
+        --footer=$'\n  Enabled skills are available to agents and Claude\n  Search any column · Tab toggle · Ctrl-A all · Ctrl-D none · Enter review · Esc cancel' \
+        --footer-border=top \
         --bind "$(initial_selection_binding "$MANIFEST"),ctrl-a:select-all,ctrl-d:deselect-all"
   ); then
     :
@@ -582,12 +695,12 @@ open_picker() {
 
   preflight "$candidate" true
   review_selection "$selected"
-  printf '\nApply these changes? [y/N] '
-  IFS= read -r answer
-  case "$answer" in
-    y | Y | yes | YES) ;;
-    *) rm -- "$candidate"; TEMP_FILE=''; printf 'Cancelled.\n'; return 0 ;;
-  esac
+  if ! confirm_yes 'Apply these changes?'; then
+    rm -- "$candidate"
+    TEMP_FILE=''
+    printf 'No changes applied.\n'
+    return 0
+  fi
 
   mv -- "$candidate" "$MANIFEST"
   TEMP_FILE=''
@@ -624,7 +737,7 @@ inventory() {
 
 add_skills() {
   local source=$1 selector=${2:-} before after new_items item discovered rows selected
-  local name path description install_selector manifest_tmp enable_new=false display
+  local name path description install_selector manifest_tmp enable_new=false display selected_count
   declare -A selected_selectors=()
 
   require_command gh
@@ -646,6 +759,13 @@ add_skills() {
     [[ -n "$rows" ]] || { printf 'No new catalog entries.\n'; return 0; }
     selected="$(pick_skills_to_add "$rows")"
     [[ -n "$selected" ]] || { printf 'No skills selected.\n'; return 0; }
+    selected_count="$(wc -l <<<"$selected")"
+    printf '\nAdd and enable\n'
+    cut -f2 <<<"$selected" | sed 's/^/  + /'
+    if ! confirm_yes "Add and enable $selected_count skills?"; then
+      printf 'No skills added.\n'
+      return 0
+    fi
     enable_new=true
     while IFS=$'\t' read -r display name install_selector description; do
       selected_selectors["$name"]=$install_selector
@@ -713,7 +833,7 @@ main() {
   case "$command" in
     '') open_picker ;;
     sync)
-      [[ $# == 1 ]] || { usage; return 2; }
+      [[ $# == 1 ]] || { usage >&2; return 2; }
       require_command jq
       validate_manifest "$MANIFEST"
       install_missing "$MANIFEST"
@@ -721,28 +841,28 @@ main() {
       printf 'Skill links synchronized.\n'
       ;;
     updates)
-      [[ $# == 1 ]] || { usage; return 2; }
+      [[ $# == 1 ]] || { usage >&2; return 2; }
       require_command gh
       require_command jq
       validate_catalog
       run_updates true
       ;;
     update)
-      [[ $# == 1 ]] || { usage; return 2; }
+      [[ $# == 1 ]] || { usage >&2; return 2; }
       require_command gh
       require_command jq
       validate_catalog
       run_updates false
       ;;
     add)
-      [[ $# == 2 || $# == 3 ]] || { usage; return 2; }
+      [[ $# == 2 || $# == 3 ]] || { usage >&2; return 2; }
       add_skills "$2" "${3:-}"
       ;;
     -h | --help)
       usage
       ;;
     *)
-      usage
+      usage >&2
       return 2
       ;;
   esac
