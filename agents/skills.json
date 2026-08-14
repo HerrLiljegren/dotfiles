@@ -135,6 +135,13 @@
       "enabled": false
     },
     {
+      "name": "lavish",
+      "source": "kunchenguid/lavish-axi",
+      "selector": "lavish",
+      "description": "Turn complex or visual agent responses into rich, reviewable HTML artifacts the user can annotate and send feedback on, using the lavish-axi CLI. Use when about to give a plan, comparison, diagram, table, code diff, report, or anything easier to grasp visually than as prose.",
+      "enabled": true
+    },
+    {
       "name": "loop-me",
       "source": "mattpocock/skills",
       "selector": "loop-me",
@@ -226,6 +233,13 @@
       "enabled": true
     },
     {
+      "name": "show-me",
+      "source": "humanlayer/skills",
+      "selector": "plugins/show-me/skills/show-me/SKILL.md",
+      "description": "Help the user understand the current topic visually with concise diagrams, code-shape sketches, and focused HTML artifacts.",
+      "enabled": true
+    },
+    {
       "name": "tdd",
       "source": "mattpocock/skills",
       "selector": "tdd",
@@ -314,6 +328,13 @@
       "source": "mattpocock/skills",
       "selector": "productivity/writing-for-agents",
       "description": "Writing documents for agents. Use when creating or editing skills, or modifying AGENTS.md or CLAUDE.md.",
+      "enabled": true
+    },
+    {
+      "name": "x-thread-resource",
+      "source": "HerrLiljegren/skills",
+      "selector": "skills/productivity/x-thread-resource/SKILL.md",
+      "description": "Parse X and Twitter status URLs through twitter-thread.com's public unroll endpoint, inspect a bounded set of public linked pages, and return source-grounded Markdown or JSON. Use when the user asks to read, unroll, summarize, capture, or bookmark an X or Twitter thread.",
       "enabled": true
     }
   ]
