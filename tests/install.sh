@@ -23,6 +23,8 @@ printf '# existing zsh config\n' >"$TEST_HOME/.zshrc"
 printf '# existing zsh environment; must preserve caller-owned ZDOTDIR\n' >"$TEST_HOME/.zshenv"
 printf '[credential]\n    helper = existing-helper\n' >"$TEST_HOME/.gitconfig"
 printf 'existing starship config\n' >"$TEST_HOME/.config/starship.toml"
+mkdir -p -- "$TEST_HOME/.config/yazi"
+printf 'existing yazi config\n' >"$TEST_HOME/.config/yazi/yazi.toml"
 printf 'model = "existing-model"\n' >"$TEST_HOME/.codex/config.toml"
 ln -s ../dotfiles/ghostty/.config/ghostty "$TEST_HOME/.config/ghostty"
 
@@ -39,6 +41,8 @@ grep -Fq 'existing-model' "$TEST_HOME/.codex/config.toml" || fail 'Codex config 
 [[ -L "$TEST_HOME/.codex/AGENTS.md" ]] || fail 'Codex guidance was not linked'
 [[ -L "$TEST_HOME/.config/git/ignore" ]] || fail 'global Git ignore was not linked'
 [[ -L "$TEST_HOME/.config/worktrunk/config.toml" ]] || fail 'Worktrunk config was not linked'
+[[ -L "$TEST_HOME/.config/yazi" ]] || fail 'Yazi config was not linked'
+[[ -f "$TEST_HOME/.config/yazi.pre-dotfiles/yazi.toml" ]] || fail 'existing Yazi config was not backed up'
 [[ -L "$TEST_HOME/.config/herdr/config.toml" ]] || fail 'Herdr config was not linked'
 [[ "$(readlink -- "$TEST_HOME/.config/ghostty")" == "$ROOT/config/ghostty" ]] ||
   fail 'legacy Ghostty config was not migrated'
@@ -121,6 +125,8 @@ XDG_CONFIG_HOME="$TEST_HOME/.config" \
 
 [[ ! -L "$TEST_HOME/.config/starship.toml" ]] || fail 'starship symlink remained after uninstall'
 [[ ! -L "$TEST_HOME/.config/ghostty" ]] || fail 'Ghostty symlink remained after uninstall'
+[[ ! -L "$TEST_HOME/.config/yazi" ]] || fail 'Yazi symlink remained after uninstall'
+grep -Fq 'existing yazi config' "$TEST_HOME/.config/yazi/yazi.toml" || fail 'Yazi backup was not restored'
 grep -Fq 'existing starship config' "$TEST_HOME/.config/starship.toml" || fail 'starship backup was not restored'
 [[ ! -L "$TEST_HOME/.local/bin/git-aliases" ]] || fail 'Git alias guide symlink remained after uninstall'
 [[ ! -L "$TEST_HOME/.local/bin/skillset" ]] || fail 'skillset symlink remained after uninstall'

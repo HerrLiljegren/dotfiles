@@ -41,6 +41,8 @@ whence -w -- -ftb-complete | grep -Fq "function" ||
   dotfiles_contract_fail "the Git alias guide shortcut was not loaded"
 [[ "${galiases[C]}" == '| wl-copy' ]] ||
   dotfiles_contract_fail "the global clipboard alias C was not loaded"
+(( $+functions[y] )) ||
+  dotfiles_contract_fail "the Yazi directory-changing helper was not loaded"
 whence -p git-aliases >/dev/null ||
   dotfiles_contract_fail "the Git alias guide command was not installed"
 (( $+functions[check_alias_usage] )) ||

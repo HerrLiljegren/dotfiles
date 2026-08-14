@@ -1,0 +1,11 @@
+[flavor]
+dark = "catppuccin-mocha"
+light = "catppuccin-mocha"
+
+[git]
+modified = { fg = "#89b4fa" }
+added = { fg = "#a6e3a1" }
+untracked = { fg = "#f9e2af" }
+ignored = { fg = "#6c7086" }
+deleted = { fg = "#f38ba8" }
+updated = { fg = "#cba6f7" }
