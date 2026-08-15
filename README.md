@@ -31,8 +31,9 @@ configuration.
 Clone the repository to a stable location because managed files are symlinks:
 
 ```bash
-git clone <repository-url> "${XDG_DATA_HOME:-$HOME/.local/share}/dotfiles"
-"${XDG_DATA_HOME:-$HOME/.local/share}/dotfiles/install.sh"
+mkdir -p "${XDG_DATA_HOME:-$HOME/.local/share}" \
+  && git clone https://github.com/HerrLiljegren/dotfiles.git "${XDG_DATA_HOME:-$HOME/.local/share}/dotfiles" \
+  && "${XDG_DATA_HOME:-$HOME/.local/share}/dotfiles/install.sh"
 ```
 
 `install.sh` resolves its own location, supports any non-root `$HOME`, and can
