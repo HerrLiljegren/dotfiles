@@ -205,6 +205,13 @@
       "enabled": true
     },
     {
+      "name": "primer",
+      "source": "HerrLiljegren/skills",
+      "selector": "engineering/primer",
+      "description": "Create a ready-to-paste primer for continuing current technical work in a fresh agent session.",
+      "enabled": true
+    },
+    {
       "name": "prototype",
       "source": "mattpocock/skills",
       "selector": "prototype",
