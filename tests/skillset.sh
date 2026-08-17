@@ -98,9 +98,11 @@ printf '%s\n' \
   '    printf "]\n"' \
   '    ;;' \
   '  "skill install")' \
+  '    printf "%s\n" "$*" >>"$GH_LOG.install"' \
   '    printf "verbose gh install output\n"' \
   '    if [[ ${FAKE_GH_FAIL_INSTALL:-} == 1 ]]; then printf "fake install failed\n" >&2; exit 42; fi' \
   '    selector=${4:-}' \
+  '    source_repo=${3:-}' \
   '    if [[ ${FAKE_GH_REQUIRE_EXACT_PARALLEL:-} == 1 && $selector == */SKILL.md ]]; then' \
   '      marker="$GH_LOG.exact-parallel.$BASHPID"' \
   '      : >"$marker"' \
@@ -117,12 +119,19 @@ printf '%s\n' \
   '    fi' \
   '    install_skill() {' \
   '      local name=$1' \
+  '      local gh_path="skills/$name"' \
+  '      [[ $source_repo != example/hidden ]] || gh_path=".agents/skills/$name"' \
   '      mkdir -p -- "$catalog/$name"' \
-  '      printf "%s\n" --- "name: $name" "description: >" "  Added from GitHub" "  with folded text." "metadata:" "    github-tree-sha: new-tree-sha" --- >"$catalog/$name/SKILL.md"' \
+  '      printf "%s\n" --- "name: $name" "description: >" "  Added from GitHub" "  with folded text." "metadata:" "    github-path: $gh_path" "    github-tree-sha: new-tree-sha" --- >"$catalog/$name/SKILL.md"' \
   '    }' \
-  '    [[ -n $selector && $selector != --* ]] || { printf "group/bundle-one\tFirst bundled skill\ngroup/bundle-two\tSecond bundled skill\n"; exit; }' \
-  '    if [[ $selector == */SKILL.md ]]; then parent=${selector%/SKILL.md}; name=${parent##*/}; else name=${selector##*/}; fi' \
-  '    install_skill "$name"' \
+  '    if [[ -n $selector && $selector != --* ]]; then' \
+  '      if [[ $selector == */SKILL.md ]]; then parent=${selector%/SKILL.md}; name=${parent##*/}; else name=${selector##*/}; fi' \
+  '      install_skill "$name"' \
+  '    elif [[ $source_repo == example/hidden ]]; then' \
+  '      printf "[hidden-dir] hidden-one\tFirst hidden skill\n[hidden-dir] hidden-two\tSecond hidden skill\n"' \
+  '    else' \
+  '      printf "group/bundle-one\tFirst bundled skill\ngroup/bundle-two\tSecond bundled skill\n"' \
+  '    fi' \
   '    ;;' \
   '  "skill update")' \
   '    printf "%s\n" "$*" >>"$GH_LOG"' \
@@ -171,6 +180,8 @@ help_output="$(run_skillset --help)"
   fail 'help did not include a repository add example'
 [[ "$help_output" == *'Example: skillset add richlander/dotnet-inspect dotnet-inspect'* ]] ||
   fail 'help did not include a selector add example'
+[[ "$help_output" == *'--allow-hidden-dirs'* ]] ||
+  fail 'help did not document --allow-hidden-dirs'
 
 run_skillset sync >/dev/null
 for root in "$AGENTS_DIR" "$CLAUDE_DIR"; do
@@ -328,5 +339,51 @@ grep -Fq 'github-tree-sha: new-tree-sha' "$CATALOG/exact/SKILL.md" ||
 if grep -Fq ' exact ' "$GH_LOG"; then
   fail 'exact-path skill was delegated to gh skill update discovery'
 fi
+
+: >"$GH_LOG.install"
+run_skillset add example/skills epsilon >/dev/null
+if grep -Fq -- '--allow-hidden-dirs' "$GH_LOG.install"; then
+  fail 'add passed --allow-hidden-dirs without the flag'
+fi
+[[ -f "$CATALOG/epsilon/SKILL.md" ]] || fail 'default add did not install the skill'
+
+: >"$GH_LOG.install"
+run_skillset add example/skills zeta --allow-hidden-dirs >/dev/null
+grep -Fq -- '--allow-hidden-dirs' "$GH_LOG.install" ||
+  fail 'add did not pass --allow-hidden-dirs to gh skill install'
+
+: >"$GH_LOG.install"
+printf '\n' | FAKE_FZF_SELECTED='bundle-two' run_skillset add example/bundle --allow-hidden-dirs >/dev/null
+grep -Fq -- '--allow-hidden-dirs' "$GH_LOG.install" ||
+  fail 'repository add did not pass --allow-hidden-dirs during discovery'
+[[ -f "$CATALOG/bundle-two/SKILL.md" ]] ||
+  fail 'repository add did not install the hidden-dir selection'
+
+: >"$GH_LOG.install"
+printf '\n' | FAKE_FZF_SELECTED='hidden-one' run_skillset add example/hidden --allow-hidden-dirs >/dev/null
+jq -e '
+  .skills[] | select(.name == "hidden-one") |
+  (.selector == "hidden-one" and .source == "example/hidden" and .hidden == true and .enabled == true)
+' "$MANIFEST" >/dev/null ||
+  fail 'hidden-dir add did not record the stripped selector and hidden flag'
+[[ -f "$CATALOG/hidden-one/SKILL.md" ]] ||
+  fail 'hidden-dir add did not install the selection'
+
+rm -rf -- "$CATALOG/hidden-one"
+: >"$GH_LOG.install"
+run_skillset sync >/dev/null
+grep -Fq -- '--allow-hidden-dirs' "$GH_LOG.install" ||
+  fail 'sync did not pass --allow-hidden-dirs to reinstall the hidden skill'
+[[ -f "$CATALOG/hidden-one/SKILL.md" ]] ||
+  fail 'sync did not restore the missing hidden skill'
+
+: >"$GH_LOG"
+: >"$GH_LOG.install"
+run_skillset updates >/dev/null 2>&1
+if grep -Fq 'hidden-one' "$GH_LOG"; then
+  fail 'hidden skill was delegated to gh skill update discovery'
+fi
+grep -Fq -- '--allow-hidden-dirs' "$GH_LOG.install" ||
+  fail 'updates did not check the hidden skill with --allow-hidden-dirs'
 
 printf 'skillset behavior tests passed\n'

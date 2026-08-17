@@ -79,6 +79,14 @@
       "enabled": true
     },
     {
+      "name": "generate-writeup",
+      "source": "pamelafox/presentation-skills",
+      "selector": "generate-writeup",
+      "description": "Generate an annotated blog-style write-up from a presentation''s slides and video recording. Orchestrates the full pipeline: fetching slides, converting to images, extracting transcript, generating chapters, outlining slides, and producing the final annotated markdown. USE FOR: write-up, blog post, presentation summary, annotated write-up, generate writeup.",
+      "enabled": true,
+      "hidden": true
+    },
+    {
       "name": "grill-with-docs",
       "source": "mattpocock/skills",
       "selector": "grill-with-docs",
@@ -205,6 +213,13 @@
       "enabled": true
     },
     {
+      "name": "presentation-creator",
+      "source": "mblode/agent-skills",
+      "selector": "presentation-creator",
+      "description": "Creates bold, minimal presentations built on a story spine, with punchy slide copy, high-contrast visual design (full-bleed palettes or dark with section accents), and conversational speaker notes. Covers live talks, async/recorded decks, 10-slide investor pitch decks, and decks built as a web app with a route per slide and live demos. Use when creating a presentation, structuring a deck, writing slides, building a pitch deck for investors, fixing a deck that has no narrative, or asking \"outline a presentation about...\", \"write slides for...\", \"design a deck for...\", \"turn this doc into a deck\", \"my talk has no story\", or \"build this deck as a website\". For long-form articles use the external ghostwriter skill with platform blog; for marketing copy outside slides use copywriting; for product UI design systems use ui-design.",
+      "enabled": true
+    },
+    {
       "name": "primer",
       "source": "HerrLiljegren/skills",
       "selector": "engineering/primer",
@@ -231,6 +246,14 @@
       "selector": "resolving-merge-conflicts",
       "description": "Resolve an active merge or rebase conflict.",
       "enabled": true
+    },
+    {
+      "name": "review-presentation",
+      "source": "pamelafox/presentation-skills",
+      "selector": "review-presentation",
+      "description": "Use this to review slides for accuracy",
+      "enabled": true,
+      "hidden": true
     },
     {
       "name": "seq-search-and-query",
@@ -329,6 +352,22 @@
       "selector": "skills/productivity/where-were-we/SKILL.md",
       "description": "Reconstruct interrupted work and identify the next useful step.",
       "enabled": true
+    },
+    {
+      "name": "worktree-closeout",
+      "source": "HerrLiljegren/skills",
+      "selector": "in-progress/worktree-closeout",
+      "description": "Deliver and close one approved issue worktree without a pull request.",
+      "enabled": true,
+      "hidden": false
+    },
+    {
+      "name": "worktree-space",
+      "source": "HerrLiljegren/skills",
+      "selector": "in-progress/worktree-space",
+      "description": "Create a Worktrunk-managed worktree and matching herdr space from an issue number plus title, or from a supplied worktree name.",
+      "enabled": true,
+      "hidden": false
     },
     {
       "name": "writing-for-agents",

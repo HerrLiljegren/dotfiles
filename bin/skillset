@@ -56,14 +56,17 @@ Commands
       SKILL.md path ask for confirmation before they are installed.
       Example: skillset update
 
-  add OWNER/REPO
+  add OWNER/REPO [--allow-hidden-dirs]
       Discover a repository's skills, choose them in a picker, then add,
-      install, and enable the selection.
+      install, and enable the selection. --allow-hidden-dirs includes skills
+      stored in hidden directories (e.g. .agents/skills/).
       Example: skillset add mattpocock/skills
 
-  add OWNER/REPO SELECTOR
+  add OWNER/REPO SELECTOR [--allow-hidden-dirs]
       Add and install one named skill or SKILL.md path, initially disabled.
+      --allow-hidden-dirs includes skills stored in hidden directories.
       Example: skillset add richlander/dotnet-inspect dotnet-inspect
+      Example: skillset add pamelafox/presentation-skills --allow-hidden-dirs
 
 Options
   -h, --help
@@ -111,7 +114,8 @@ validate_manifest() {
       (.source | type == "string" and test("^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")) and
       ((.selector // .name) | type == "string" and length > 0 and (test("[\\t\\r\\n]") | not)) and
       ((.description // "") | type == "string" and (test("[\\t\\r\\n]") | not)) and
-      (.enabled | type == "boolean")
+      (.enabled | type == "boolean") and
+      ((.hidden // false) | type == "boolean")
     )) and
     (([.skills[].name] | length) == ([.skills[].name] | unique | length))
   ' "$manifest" >/dev/null || die "invalid manifest: $manifest"
@@ -178,9 +182,10 @@ quiet_skill_install() {
 }
 
 discover_skills() {
-  local output status
+  local source=$1 output status
+  shift
 
-  if output="$(gh skill install "$1" --dir "$CATALOG" 2>&1)"; then
+  if output="$(gh skill install "$source" --dir "$CATALOG" "$@" 2>&1)"; then
     awk -F '\t' 'NF >= 2' <<<"$output"
   else
     status=$?
@@ -198,6 +203,7 @@ available_skill_rows() {
   done < <(jq -r '.skills[].name' "$MANIFEST")
 
   while IFS=$'\t' read -r selector description; do
+    selector=${selector#\[hidden-dir\] }
     name=${selector##*/}
     [[ -n "${known[$name]:-}" ]] && continue
     printf '%s\t%s\t%s\n' "$name" "$selector" "$description"
@@ -255,13 +261,31 @@ metadata_tree_sha() {
   ' "$1"
 }
 
-inspect_exact_path_updates() {
-  local name source selector current_sha latest_sha
+skill_hidden() {
+  local github_path
+  github_path="$(awk '
+    /^metadata:[[:space:]]*$/ { metadata = 1; next }
+    metadata && /^[^[:space:]]/ { exit }
+    metadata && /^[[:space:]]+github-path:[[:space:]]*/ {
+      sub(/^[[:space:]]+github-path:[[:space:]]*/, "")
+      print
+      exit
+    }
+  ' "$1")"
+  [[ "$github_path" == .* ]]
+}
 
-  while IFS=$'\t' read -r name source selector; do
+inspect_exact_path_updates() {
+  local name source selector hidden current_sha latest_sha
+
+  while IFS=$'\t' read -r name source selector hidden; do
     printf 'Checking exact-path skill: %s (%s)\n' "$name" "$source" >&2
     TEMP_DIR="$(mktemp -d /tmp/skillset-update.XXXXXX)"
-    quiet_skill_install "$source" "$selector" --dir "$TEMP_DIR"
+    if [[ "$hidden" == true ]]; then
+      quiet_skill_install "$source" "$selector" --dir "$TEMP_DIR" --allow-hidden-dirs
+    else
+      quiet_skill_install "$source" "$selector" --dir "$TEMP_DIR"
+    fi
     [[ -f "$TEMP_DIR/$name/SKILL.md" ]] ||
       die "gh skill installed an unexpected layout for: $name"
     current_sha="$(metadata_tree_sha "$CATALOG/$name/SKILL.md")"
@@ -269,23 +293,26 @@ inspect_exact_path_updates() {
     [[ -n "$current_sha" && -n "$latest_sha" ]] ||
       die "exact-path skill is missing update metadata: $name"
     [[ "$current_sha" == "$latest_sha" ]] ||
-      printf '%s\t%s\t%s\n' "$name" "$source" "$selector"
+      printf '%s\t%s\t%s\t%s\n' "$name" "$source" "$selector" "$hidden"
     rm -rf -- "$TEMP_DIR"
     TEMP_DIR=''
   done < <(jq -r '
     .skills[] |
-    select(.selector | endswith("/SKILL.md")) |
-    [.name, .source, .selector] |
+    select((.selector | endswith("/SKILL.md")) or (.hidden // false)) |
+    [.name, .source, .selector, ((.hidden // false) | tostring)] |
     @tsv
   ' "$MANIFEST")
 }
 
 check_exact_update() {
-  local source=$1 name=$2 selector=$3 result_dir=$4
+  local source=$1 name=$2 selector=$3 result_dir=$4 hidden=${5:-}
   local output current_sha latest_sha install_dir
+  local -a args=(skill install "$source" "$selector")
 
   install_dir="$(mktemp -d /tmp/skillset-update.XXXXXX)"
-  if output="$(gh skill install "$source" "$selector" --dir "$install_dir" 2>&1)"; then
+  args=(skill install "$source" "$selector" --dir "$install_dir")
+  [[ "$hidden" != true ]] || args+=(--allow-hidden-dirs)
+  if output="$(gh "${args[@]}" 2>&1)"; then
     if [[ ! -f "$install_dir/$name/SKILL.md" ]]; then
       printf '%s: gh skill installed an unexpected layout\n' "$name" >"$result_dir/error"
     else
@@ -309,7 +336,7 @@ check_update_group() {
 
   mapfile -t names < <(jq -r --arg source "$source" '
     .skills[] |
-    select(.source == $source and (.selector | endswith("/SKILL.md") | not)) |
+    select(.source == $source and ((.selector | endswith("/SKILL.md") | not) and ((.hidden // false) | not))) |
     .name
   ' "$MANIFEST")
   if ((${#names[@]} > 0)); then
@@ -321,17 +348,17 @@ check_update_group() {
     fi
   fi
 
-  while IFS=$'\t' read -r name selector; do
+  while IFS=$'\t' read -r name selector hidden; do
     [[ -n "$name" ]] || continue
     exact_dir="$result_dir/exact-${#exact_pids[@]}"
     mkdir -- "$exact_dir"
-    check_exact_update "$source" "$name" "$selector" "$exact_dir" &
+    check_exact_update "$source" "$name" "$selector" "$exact_dir" "$hidden" &
     exact_pids+=("$!")
     exact_dirs+=("$exact_dir")
   done < <(jq -r --arg source "$source" '
     .skills[] |
-    select(.source == $source and (.selector | endswith("/SKILL.md"))) |
-    [.name, .selector] |
+    select(.source == $source and ((.selector | endswith("/SKILL.md")) or (.hidden // false))) |
+    [.name, .selector, ((.hidden // false) | tostring)] |
     @tsv
   ' "$MANIFEST")
 
@@ -457,7 +484,7 @@ run_update_signals() {
 }
 
 run_updates() {
-  local dry_run=$1 output status exact_updates name source selector
+  local dry_run=$1 output status exact_updates name source selector hidden
   local -a regular_names=() command=(gh skill update)
 
   if [[ "$dry_run" == true ]]; then
@@ -466,7 +493,9 @@ run_updates() {
   fi
 
   mapfile -t regular_names < <(jq -r '
-    .skills[] | select(.selector | endswith("/SKILL.md") | not) | .name
+    .skills[] |
+    select((.selector | endswith("/SKILL.md") | not) and ((.hidden // false) | not)) |
+    .name
   ' "$MANIFEST")
 
   exact_updates="$(inspect_exact_path_updates)"
@@ -492,7 +521,7 @@ run_updates() {
   fi
   [[ -z "$output" ]] || printf '%s\n' "$output"
 
-  while IFS=$'\t' read -r name source selector; do
+  while IFS=$'\t' read -r name source selector hidden; do
     [[ -z "$name" ]] || printf 'Update available: %s (from %s)\n' "$name" "$source"
   done <<<"$exact_updates"
   [[ "$dry_run" == true || -z "$exact_updates" ]] && return 0
@@ -503,21 +532,30 @@ run_updates() {
     return 0
   }
 
-  while IFS=$'\t' read -r name source selector; do
-    quiet_skill_install "$source" "$selector" --dir "$CATALOG" --force
+  while IFS=$'\t' read -r name source selector hidden; do
+    if [[ "$hidden" == true ]]; then
+      quiet_skill_install "$source" "$selector" --dir "$CATALOG" --force --allow-hidden-dirs
+    else
+      quiet_skill_install "$source" "$selector" --dir "$CATALOG" --force
+    fi
     printf 'Updated %s.\n' "$name"
   done <<<"$exact_updates"
 }
 
 install_missing() {
-  local manifest=$1 name source selector description enabled
+  local manifest=$1 name source selector description enabled hidden
 
   while IFS=$'\t' read -r name source selector description enabled; do
     [[ -f "$CATALOG/$name/SKILL.md" ]] && continue
     require_command gh
     mkdir -p -- "$CATALOG"
     printf 'Installing %s from %s...\n' "$name" "$source"
-    quiet_skill_install "$source" "$selector" --dir "$CATALOG"
+    hidden="$(jq -r --arg name "$name" '.skills[] | select(.name == $name) | (.hidden // false)' "$manifest")"
+    if [[ "$hidden" == true ]]; then
+      quiet_skill_install "$source" "$selector" --dir "$CATALOG" --allow-hidden-dirs
+    else
+      quiet_skill_install "$source" "$selector" --dir "$CATALOG"
+    fi
     [[ -f "$CATALOG/$name/SKILL.md" ]] ||
       die "gh skill installed an unexpected layout for: $name"
   done < <(manifest_rows "$manifest")
@@ -736,8 +774,8 @@ inventory() {
 }
 
 add_skills() {
-  local source=$1 selector=${2:-} before after new_items item discovered rows selected
-  local name path description install_selector manifest_tmp enable_new=false display selected_count
+  local source=$1 selector=${2:-} allow_hidden_dirs=${3:-} before after new_items item discovered rows selected
+  local name path description hidden install_selector manifest_tmp enable_new=false display selected_count
   declare -A selected_selectors=()
 
   require_command gh
@@ -750,10 +788,10 @@ add_skills() {
 
   before="$(inventory)"
   if [[ -n "$selector" ]]; then
-    quiet_skill_install "$source" "$selector" --dir "$CATALOG"
+    quiet_skill_install "$source" "$selector" --dir "$CATALOG" ${allow_hidden_dirs:+--allow-hidden-dirs}
   else
     require_command fzf
-    discovered="$(discover_skills "$source")"
+    discovered="$(discover_skills "$source" ${allow_hidden_dirs:+--allow-hidden-dirs})"
     [[ -n "$discovered" ]] || die "no skills discovered in: $source"
     rows="$(available_skill_rows "$discovered")"
     [[ -n "$rows" ]] || { printf 'No new catalog entries.\n'; return 0; }
@@ -769,7 +807,7 @@ add_skills() {
     enable_new=true
     while IFS=$'\t' read -r display name install_selector description; do
       selected_selectors["$name"]=$install_selector
-      quiet_skill_install "$source" "$install_selector" --dir "$CATALOG"
+      quiet_skill_install "$source" "$install_selector" --dir "$CATALOG" ${allow_hidden_dirs:+--allow-hidden-dirs}
     done <<<"$selected"
   fi
   after="$(inventory)"
@@ -791,6 +829,10 @@ add_skills() {
     jq -e --arg name "$name" 'all(.skills[]; .name != $name)' "$MANIFEST" >/dev/null ||
       die "manifest already contains skill: $name"
     description="$(skill_description "$path/SKILL.md")"
+    hidden=false
+    if skill_hidden "$path/SKILL.md"; then
+      hidden=true
+    fi
     install_selector=$name
     if [[ -n "$selector" && "$(jq 'length' <<<"$new_items")" == 1 ]]; then
       install_selector=$selector
@@ -805,13 +847,15 @@ add_skills() {
       --arg source "$source" \
       --arg selector "$install_selector" \
       --arg description "$description" \
-      --argjson enabled "$enable_new" '
+      --argjson enabled "$enable_new" \
+      --argjson hidden "$hidden" '
         .skills += [{
           name: $name,
           source: $source,
           selector: $selector,
           description: $description,
-          enabled: $enabled
+          enabled: $enabled,
+          hidden: $hidden
         }] |
         .skills |= sort_by(.name)
       ' "$MANIFEST" >"$manifest_tmp"
@@ -855,8 +899,27 @@ main() {
       run_updates false
       ;;
     add)
-      [[ $# == 2 || $# == 3 ]] || { usage >&2; return 2; }
-      add_skills "$2" "${3:-}"
+      local source='' selector='' allow_hidden_dirs=''
+      shift
+      while (($#)); do
+        case "$1" in
+          --allow-hidden-dirs) allow_hidden_dirs=1 ;;
+          -*) usage >&2; return 2 ;;
+          *)
+            if [[ -z "$source" ]]; then
+              source=$1
+            elif [[ -z "$selector" ]]; then
+              selector=$1
+            else
+              usage >&2
+              return 2
+            fi
+            ;;
+        esac
+        shift
+      done
+      [[ -n "$source" ]] || { usage >&2; return 2; }
+      add_skills "$source" "$selector" "$allow_hidden_dirs"
       ;;
     -h | --help)
       usage
