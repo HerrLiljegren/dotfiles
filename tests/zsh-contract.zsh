@@ -43,6 +43,14 @@ whence -w -- -ftb-complete | grep -Fq "function" ||
   dotfiles_contract_fail "the global clipboard alias C was not loaded"
 (( $+functions[y] )) ||
   dotfiles_contract_fail "the Yazi directory-changing helper was not loaded"
+(( $+functions[cliq] )) ||
+  dotfiles_contract_fail "the cliq command helper was not loaded"
+(( $+functions[_cliq_verdict] )) ||
+  dotfiles_contract_fail "the cliq verdict gate was not loaded"
+setopt | grep -Fq 'rmstarwait' ||
+  dotfiles_contract_fail "rm_star_wait was not set"
+setopt | grep -Fq 'rmstarsilent' ||
+  dotfiles_contract_fail "rm_star_silent was not set"
 whence -p git-aliases >/dev/null ||
   dotfiles_contract_fail "the Git alias guide command was not installed"
 (( $+functions[check_alias_usage] )) ||

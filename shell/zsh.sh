@@ -8,6 +8,7 @@ source "$DOTFILES_SHELL_DIR/zsh/history.zsh"
 source "$DOTFILES_SHELL_DIR/zsh/completion.zsh"
 source "$DOTFILES_SHELL_DIR/zsh/integrations.zsh"
 source "$DOTFILES_SHELL_DIR/zsh/keybindings.zsh"
+source "$DOTFILES_SHELL_DIR/zsh/cliq.zsh"
 
 DOTFILES_PERSONAL_ZSH="${XDG_CONFIG_HOME:-$HOME/.config}/dotfiles/personal.zsh"
 if [[ -r "$DOTFILES_PERSONAL_ZSH" ]]; then

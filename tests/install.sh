@@ -98,6 +98,9 @@ then
   fail 'Zsh history cursor contract failed'
 fi
 
+zsh "$ROOT/tests/cliq.zsh" \
+  || fail 'cliq safety gate tests failed'
+
 HOME="$TEST_HOME" \
 XDG_CONFIG_HOME="$TEST_HOME/.config" \
 TERM=xterm-256color \

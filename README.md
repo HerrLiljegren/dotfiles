@@ -16,6 +16,7 @@ runtimes. Explicit optional setup may install plugins through an existing tool.
 ## Managed configuration
 
 - Bash and Zsh integration
+- Natural-language shell commands via pi (`cliq`) with verdict-gated safety
 - Shared Zsh history, fzf completion, autosuggestions, syntax highlighting,
   and alias reminders
 - Git behavior, OMZ-compatible aliases, an alias guide, and global ignores
@@ -89,6 +90,19 @@ plugin. Their definitions are verified against a pinned upstream snapshot.
 Run `ghelp` for a compact overview, `ghelp <alias-or-category>` for usage
 guidance, or `ghelp --all` for the complete guide.
 
+### Natural-language shell commands
+
+`cliq` turns a plain-language request into a shell command using pi (`pi -p`)
+with the `opencode-go/deepseek-v4-flash` model; override the model with
+`CLIQ_MODEL`. By default the command is inserted into the edit buffer for
+review and nothing runs. `cliq -x` / `cliq --run` executes only after a
+static verdict gate (ok/caution/danger) applies friction scaled to the risk:
+a plain yes/no for ok, typed confirmation of the command's first characters
+for caution (override the length with `CLIQ_CONFIRM_CHARS`), and a refusal
+for danger unless `--force` is passed. Executed suggestions are appended to
+`~/.local/share/cliq/log` because eval'ed commands never reach zsh history.
+The verdict never trusts the model; the shell's own pattern gate decides.
+
 ### Vendored Zsh plugins
 
 Runtime files for autosuggestions, history substring search, syntax
@@ -137,6 +151,7 @@ bash tests/install-options.sh
 bash tests/git-alias-guide.sh
 bash tests/skillset.sh
 zsh tests/git-aliases.zsh
+zsh tests/cliq.zsh
 bash tests/install.sh
 ./doctor.sh
 ```
