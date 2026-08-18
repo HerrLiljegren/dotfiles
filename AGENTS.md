@@ -16,6 +16,8 @@ WSL, and Linux-based devcontainers.
 - Run `bash tests/install.sh` after changing installation behavior or managed
   paths.
 - Prefer explicit file mappings over recursive discovery or a profile system.
+- Agents must not create commits in this repository; Jesper runs `updot`
+  manually when ready. Leave changes staged and never push.
 
 ## Skillset ownership
 
