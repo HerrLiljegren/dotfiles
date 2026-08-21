@@ -248,6 +248,7 @@ mkdir -p -- "$HOME/.local/bin"
 link_path "$ROOT/config/bat/config" "$XDG_CONFIG_HOME/bat/config"
 link_path "$ROOT/config/bat/themes/Catppuccin Mocha.tmTheme" "$XDG_CONFIG_HOME/bat/themes/Catppuccin Mocha.tmTheme"
 link_path "$ROOT/config/delta/config.gitconfig" "$XDG_CONFIG_HOME/delta/config.gitconfig"
+link_path "$ROOT/config/ov/config.yaml" "$XDG_CONFIG_HOME/ov/config.yaml"
 link_path "$ROOT/config/glow/glow.yml" "$XDG_CONFIG_HOME/glow/glow.yml"
 link_path \
   "$ROOT/config/ghostty" \

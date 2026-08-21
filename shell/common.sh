@@ -17,7 +17,15 @@ elif command -v vim >/dev/null 2>&1; then
   export VISUAL=vim
 fi
 
-export PAGER="${PAGER:-less}"
+# Prefer ov (modern pager) when installed; fall back to less elsewhere.
+# Keep LESS for tools that invoke less directly.
+if command -v ov >/dev/null 2>&1; then
+  export PAGER=ov
+  export MANPAGER=ov
+else
+  export PAGER=less
+  export MANPAGER=less
+fi
 export LESS="${LESS:--FRX}"
 fzf_default_opts='--height=40% --layout=reverse --border'
 fzf_default_opts="$fzf_default_opts --color=fg:#cdd6f4,bg:-1,hl:#f9e2af"

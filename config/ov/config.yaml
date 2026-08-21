@@ -1,0 +1,82 @@
+# ov — modern terminal pager (https://github.com/noborus/ov)
+# Catppuccin Mocha palette, matching bat/delta/fzf.
+# Mouse: wheel scrolls vertically, Shift+wheel scrolls horizontally.
+# Keybindings: ov defaults (no less template).
+
+SetTerminalTitle: true   # show the file name in the terminal title
+QuitSmall: true          # exit immediately if content fits one screen (less -F)
+ClipboardMethod: "OSC52" # copy via OSC52; works over SSH and in tmux
+
+General:
+  VScrollLines: 3        # lines per mouse wheel notch
+  HScrollWidth: "10%"    # horizontal scroll step (Shift+wheel), screen fraction
+  LineNumMode: true      # line numbers, like bat --style=numbers
+  StatusLine: true
+  Wrap: "character"
+  AlternateRows: false
+  Prompt:
+    Normal:
+      ShowFilename: true
+      InvertColor: false   # required for LeftStatus/RightStatus styles to apply
+      ProcessOfCount: true
+      CursorType: 0
+    Input:
+      CursorType: 1
+  MultiColorWords:       # colored by the MultiColorHighlight list below
+    - "ERROR"
+    - "WARN"
+    - "INFO"
+    - "DEBUG"
+  Style:
+    LineNumber:
+      Foreground: "#6c7086"      # overlay0
+    Header:
+      Foreground: "#89b4fa"      # blue
+      Background: "#313244"      # surface0
+      Bold: true
+    HeaderBorder:
+      Foreground: "#45475a"      # surface1
+    SearchHighlight:
+      Foreground: "#1e1e2e"      # base
+      Background: "#f9e2af"      # yellow
+      Bold: true
+    SectionLine:
+      Foreground: "#f9e2af"      # yellow
+      Background: "#313244"      # surface0
+    SectionBorder:
+      Foreground: "#45475a"      # surface1
+    Alternate:
+      Background: "#181825"      # mantle
+    SelectActive:
+      Background: "#45475a"      # surface1
+    SelectCopied:
+      Foreground: "#a6e3a1"      # green
+      Bold: true
+    MarkLine:
+      Foreground: "#f38ba8"      # red
+      Bold: true
+    JumpTargetLine:
+      Background: "#45475a"      # surface1
+    LeftStatus:
+      Foreground: "#cba6f7"      # mauve
+      Bold: true
+    RightStatus:
+      Foreground: "#a6adc8"      # subtext0
+    MultiColorHighlight:
+      - Foreground: "#f38ba8"    # ERROR -> red
+      - Foreground: "#74c7ec"    # WARN  -> sapphire
+      - Foreground: "#f9e2af"    # INFO  -> yellow
+      - Foreground: "#cba6f7"    # DEBUG -> mauve
+    ColumnRainbow:
+      - Foreground: "#89b4fa"    # blue
+      - Foreground: "#cba6f7"    # mauve
+      - Foreground: "#a6e3a1"    # green
+      - Foreground: "#f9e2af"    # yellow
+      - Foreground: "#fab387"    # peach
+      - Foreground: "#94e2d5"    # teal
+      - Foreground: "#f38ba8"    # red
+
+StyleOverStrike:
+  Bold: true
+StyleOverLine:
+  Underline: true
