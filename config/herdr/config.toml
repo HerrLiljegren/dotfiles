@@ -31,6 +31,28 @@ type = "plugin_action"
 command = "third774.last-workspace.toggle"
 description = "last workspace"
 
+# Recently-used workspace navigation (browser Ctrl+Tab style).
+# Opens the MRU workspace popup; walk the list and press Enter to switch.
+[[keys.command]]
+key = "ctrl+tab"
+type = "plugin_action"
+command = "beyondlex.herdr-recent-navigator.focus-workspaces"
+description = "recent workspaces (MRU)"
+
+[[keys.command]]
+key = "ctrl+shift+tab"
+type = "plugin_action"
+command = "beyondlex.herdr-recent-navigator.focus-workspaces"
+description = "recent workspaces (MRU)"
+
+# Jump-to-anything launcher — Herdr Navigator (workspaces, agents, projects,
+# sessions, remotes, zoxide dirs, actions). Fuzzy-search, action-aware Enter.
+[[keys.command]]
+key = "prefix+t"
+type = "plugin_action"
+command = "herdr-navigator.open"
+description = "jump to anything"
+
 # File viewing — Herdr File Viewer
 [[keys.command]]              # open in a split beside your work
 key = "prefix+f"

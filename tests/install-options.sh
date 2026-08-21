@@ -35,7 +35,10 @@ expected_calls="$(printf '%s\n' \
   'plugin install smarzban/herdr-file-viewer --yes' \
   'plugin install lmilojevicc/herdr-splits.nvim --yes' \
   'plugin install third774/herdr-last-workspace --yes' \
-  'plugin install devashish2203/herdr-worktrunk --yes')"
+  'plugin install devashish2203/herdr-worktrunk --yes' \
+  'plugin install beyondlex/herdr-recent-navigator --yes' \
+  'plugin install StructuPath/herdr-browser --yes' \
+  'plugin install thanhdat77/herdr-navigator --yes')"
 actual_calls="$(<"$HERDR_LOG")"
 
 [[ "$actual_calls" == "$expected_calls" ]] || {
