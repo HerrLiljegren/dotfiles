@@ -16,6 +16,14 @@ vim.opt.tabstop = 2
 vim.opt.termguicolors = true
 vim.opt.undofile = true
 
+vim.diagnostic.config({
+  update_in_insert = true,
+  virtual_text = true,
+  signs = true,
+  underline = true,
+  severity_sort = true,
+})
+
 if vim.env.SSH_CONNECTION then
   local osc52 = require("vim.ui.clipboard.osc52")
 
