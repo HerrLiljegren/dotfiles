@@ -1,5 +1,5 @@
-theme = "catppuccin-mocha"
-mode = "stack"
+theme = "mocha-hunk"
+mode = "auto"
 vcs = "git"
 watch = false
 exclude_untracked = false
@@ -10,3 +10,18 @@ agent_notes = false
 transparent_background = false
 copy_decorations = false
 color_moved = true
+menu_bar = true
+cursor_line = "row"
+
+[themes.mocha-hunk]
+base = "catppuccin-mocha"
+label = "Mocha · bold hunk"
+accent = "#89b4fa"
+selectedHunk = "#89b4fa"
+addedSignColor = "#a6e3a1"
+removedSignColor = "#f38ba8"
+lineNumberFg = "#cba6f7"
+
+[keybindings]
+"hunk.app.quit" = "Q"
+"hunk.review.alignCurrentLineCenter" = "ctrl+l"
