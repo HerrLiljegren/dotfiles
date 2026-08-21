@@ -4,6 +4,9 @@
 - Lead with the outcome and keep explanations proportionate to the task.
 - Preserve unrelated user changes and call out overlapping edits.
 - Run the smallest relevant verification after changing code or configuration.
+- Comment non-obvious decisions, constraints, and failure modes that the code
+  cannot make clear. For public .NET APIs, use XML documentation when it adds
+  contract or behavioral context; omit comments that only restate the code.
 - Never print, commit, or copy credentials, authentication state, or session
   history.
 - Ask before destructive operations or changes that affect external systems.
