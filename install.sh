@@ -169,6 +169,41 @@ link_path() {
   log "linked $destination"
 }
 
+migrate_legacy_directory() {
+  local source=$1
+  local destination=$2
+  shift 2
+
+  local relative=''
+  local path=''
+  local parent=''
+
+  # Only real directories can contain links managed by the old installer.
+  [[ -d "$destination" && ! -L "$destination" ]] || return 0
+
+  for relative in "$@"; do
+    path="$destination/$relative"
+
+    if [[ -L "$path" ]] && [[ "$(readlink -- "$path")" == "$source/$relative" ]]; then
+      rm -- "$path"
+      log "removed legacy link $path"
+    fi
+  done
+
+  # Remove only directories that held known legacy links, and only when empty.
+  for relative in "$@"; do
+    parent="$(dirname -- "$destination/$relative")"
+
+    while [[ "$parent" != "$destination" ]]; do
+      [[ -d "$parent" && ! -L "$parent" ]] || break
+      rmdir --ignore-fail-on-non-empty -- "$parent"
+      parent="$(dirname -- "$parent")"
+    done
+  done
+
+  rmdir --ignore-fail-on-non-empty -- "$destination"
+}
+
 ensure_block() {
   local destination=$1
   local name=$2
@@ -245,20 +280,51 @@ section 'Dotfiles'
   die "$HOME/.local/bin must be a real directory, not a symlink"
 mkdir -p -- "$HOME/.local/bin"
 
-link_path "$ROOT/config/bat/config" "$XDG_CONFIG_HOME/bat/config"
-link_path "$ROOT/config/bat/themes/Catppuccin Mocha.tmTheme" "$XDG_CONFIG_HOME/bat/themes/Catppuccin Mocha.tmTheme"
-link_path "$ROOT/config/delta/config.gitconfig" "$XDG_CONFIG_HOME/delta/config.gitconfig"
-link_path "$ROOT/config/ov/config.yaml" "$XDG_CONFIG_HOME/ov/config.yaml"
-link_path "$ROOT/config/glow/glow.yml" "$XDG_CONFIG_HOME/glow/glow.yml"
+migrate_legacy_directory \
+  "$ROOT/config/bat" \
+  "$XDG_CONFIG_HOME/bat" \
+  'config' \
+  'themes/Catppuccin Mocha.tmTheme'
+migrate_legacy_directory \
+  "$ROOT/config/delta" \
+  "$XDG_CONFIG_HOME/delta" \
+  'config.gitconfig'
+migrate_legacy_directory \
+  "$ROOT/config/glow" \
+  "$XDG_CONFIG_HOME/glow" \
+  'glow.yml'
+migrate_legacy_directory \
+  "$ROOT/config/herdr" \
+  "$XDG_CONFIG_HOME/herdr" \
+  'config.toml'
+migrate_legacy_directory \
+  "$ROOT/config/hunk" \
+  "$XDG_CONFIG_HOME/hunk" \
+  'config.toml'
+migrate_legacy_directory \
+  "$ROOT/config/ov" \
+  "$XDG_CONFIG_HOME/ov" \
+  'config.yaml'
+migrate_legacy_directory \
+  "$ROOT/config/worktrunk" \
+  "$XDG_CONFIG_HOME/worktrunk" \
+  'config.toml'
+
+link_path "$ROOT/config/bat" "$XDG_CONFIG_HOME/bat"
+link_path "$ROOT/config/btop" "$XDG_CONFIG_HOME/btop"
+link_path "$ROOT/config/delta" "$XDG_CONFIG_HOME/delta"
 link_path \
   "$ROOT/config/ghostty" \
   "$XDG_CONFIG_HOME/ghostty" \
   "../dotfiles/ghostty/.config/ghostty"
-link_path "$ROOT/config/herdr/config.toml" "$XDG_CONFIG_HOME/herdr/config.toml"
-link_path "$ROOT/config/hunk/config.toml" "$XDG_CONFIG_HOME/hunk/config.toml"
+link_path "$ROOT/config/glow" "$XDG_CONFIG_HOME/glow"
+link_path "$ROOT/config/herdr" "$XDG_CONFIG_HOME/herdr"
+link_path "$ROOT/config/hunk" "$XDG_CONFIG_HOME/hunk"
+link_path "$ROOT/config/lazygit" "$XDG_CONFIG_HOME/lazygit"
 link_path "$ROOT/config/nvim" "$XDG_CONFIG_HOME/nvim"
+link_path "$ROOT/config/ov" "$XDG_CONFIG_HOME/ov"
 link_path "$ROOT/config/starship.toml" "$XDG_CONFIG_HOME/starship.toml"
-link_path "$ROOT/config/worktrunk/config.toml" "$XDG_CONFIG_HOME/worktrunk/config.toml"
+link_path "$ROOT/config/worktrunk" "$XDG_CONFIG_HOME/worktrunk"
 link_path "$ROOT/config/yazi" "$XDG_CONFIG_HOME/yazi"
 link_path "$ROOT/git/ignore" "$XDG_CONFIG_HOME/git/ignore"
 link_path "$ROOT/bin/git-aliases" "$HOME/.local/bin/git-aliases"

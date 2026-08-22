@@ -22,6 +22,10 @@ __pycache__/
 # Generated tool state
 **/.cache/
 **/config.toml.lock
+**/state.yml
+**/recent-repos
+**/.tmp/
+**/tmp/
 
 # Throwaway design artifacts
 /prototypes/

@@ -28,11 +28,29 @@ printf 'existing yazi config\n' >"$TEST_HOME/.config/yazi/yazi.toml"
 printf 'model = "existing-model"\n' >"$TEST_HOME/.codex/config.toml"
 ln -s ../dotfiles/ghostty/.config/ghostty "$TEST_HOME/.config/ghostty"
 
+legacy_links=(
+  'bat/config'
+  'bat/themes/Catppuccin Mocha.tmTheme'
+  'delta/config.gitconfig'
+  'glow/glow.yml'
+  'herdr/config.toml'
+  'hunk/config.toml'
+  'ov/config.yaml'
+  'worktrunk/config.toml'
+)
+
+for legacy_link in "${legacy_links[@]}"; do
+  mkdir -p -- "$(dirname -- "$TEST_HOME/.config/$legacy_link")"
+  ln -s "$ROOT/config/$legacy_link" "$TEST_HOME/.config/$legacy_link"
+done
+
+printf 'existing worktrunk state\n' >"$TEST_HOME/.config/worktrunk/state.yml"
+
 before_status="$(git -C "$ROOT" status --porcelain=v1)"
 
 HOME="$TEST_HOME" \
 XDG_CONFIG_HOME="$TEST_HOME/.config" \
-  "$ROOT/install.sh"
+  "$ROOT/install.sh" </dev/null
 
 [[ -L "$TEST_HOME/.config/starship.toml" ]] || fail 'starship config was not linked'
 [[ -f "$TEST_HOME/.config/starship.toml.pre-dotfiles" ]] || fail 'existing config was not backed up'
@@ -40,13 +58,21 @@ XDG_CONFIG_HOME="$TEST_HOME/.config" \
 grep -Fq 'existing-model' "$TEST_HOME/.codex/config.toml" || fail 'Codex config was modified'
 [[ -L "$TEST_HOME/.codex/AGENTS.md" ]] || fail 'Codex guidance was not linked'
 [[ -L "$TEST_HOME/.config/git/ignore" ]] || fail 'global Git ignore was not linked'
-[[ -L "$TEST_HOME/.config/worktrunk/config.toml" ]] || fail 'Worktrunk config was not linked'
+[[ -L "$TEST_HOME/.config/worktrunk" ]] || fail 'Worktrunk config was not linked'
+[[ -f "$TEST_HOME/.config/worktrunk.pre-dotfiles/state.yml" ]] ||
+  fail 'existing Worktrunk state was not backed up'
+[[ ! -e "$TEST_HOME/.config/worktrunk.pre-dotfiles/config.toml" ]] ||
+  fail 'legacy Worktrunk link was included in the backup'
 [[ -L "$TEST_HOME/.config/yazi" ]] || fail 'Yazi config was not linked'
 [[ -f "$TEST_HOME/.config/yazi.pre-dotfiles/yazi.toml" ]] || fail 'existing Yazi config was not backed up'
-[[ -L "$TEST_HOME/.config/herdr/config.toml" ]] || fail 'Herdr config was not linked'
+[[ -L "$TEST_HOME/.config/herdr" ]] || fail 'Herdr config was not linked'
+[[ -L "$TEST_HOME/.config/bat" ]] || fail 'Bat config was not linked'
+[[ ! -e "$TEST_HOME/.config/bat.pre-dotfiles" ]] || fail 'legacy Bat directory was backed up'
+[[ -L "$TEST_HOME/.config/btop" ]] || fail 'Btop config was not linked'
+[[ -L "$TEST_HOME/.config/lazygit" ]] || fail 'Lazygit config was not linked'
 [[ "$(readlink -- "$TEST_HOME/.config/ghostty")" == "$ROOT/config/ghostty" ]] ||
   fail 'legacy Ghostty config was not migrated'
-[[ -L "$TEST_HOME/.config/hunk/config.toml" ]] || fail 'Hunk config was not linked'
+[[ -L "$TEST_HOME/.config/hunk" ]] || fail 'Hunk config was not linked'
 [[ -d "$TEST_HOME/.local/bin" && ! -L "$TEST_HOME/.local/bin" ]] || fail '.local/bin was not created as a real directory'
 [[ -L "$TEST_HOME/.local/bin/git-aliases" ]] || fail 'Git alias guide was not linked'
 [[ -L "$TEST_HOME/.local/bin/skillset" ]] || fail 'skillset was not linked'
@@ -115,7 +141,7 @@ cp -a -- "$TEST_HOME/." "$FIRST_INSTALL/"
 
 HOME="$TEST_HOME" \
 XDG_CONFIG_HOME="$TEST_HOME/.config" \
-  "$ROOT/install.sh"
+  "$ROOT/install.sh" </dev/null
 
 diff -ruN -- "$FIRST_INSTALL" "$TEST_HOME" || fail 'second install changed the target home'
 
@@ -129,6 +155,19 @@ XDG_CONFIG_HOME="$TEST_HOME/.config" \
 [[ ! -L "$TEST_HOME/.config/starship.toml" ]] || fail 'starship symlink remained after uninstall'
 [[ ! -L "$TEST_HOME/.config/ghostty" ]] || fail 'Ghostty symlink remained after uninstall'
 [[ ! -L "$TEST_HOME/.config/yazi" ]] || fail 'Yazi symlink remained after uninstall'
+[[ ! -L "$TEST_HOME/.config/btop" ]] || fail 'Btop symlink remained after uninstall'
+[[ ! -L "$TEST_HOME/.config/lazygit" ]] || fail 'Lazygit symlink remained after uninstall'
+[[ ! -L "$TEST_HOME/.config/bat" ]] || fail 'Bat symlink remained after uninstall'
+[[ ! -L "$TEST_HOME/.config/delta" ]] || fail 'Delta symlink remained after uninstall'
+[[ ! -L "$TEST_HOME/.config/glow" ]] || fail 'Glow symlink remained after uninstall'
+[[ ! -L "$TEST_HOME/.config/herdr" ]] || fail 'Herdr symlink remained after uninstall'
+[[ ! -L "$TEST_HOME/.config/hunk" ]] || fail 'Hunk symlink remained after uninstall'
+[[ ! -L "$TEST_HOME/.config/ov" ]] || fail 'Ov symlink remained after uninstall'
+[[ ! -L "$TEST_HOME/.config/worktrunk" ]] || fail 'Worktrunk symlink remained after uninstall'
+[[ -f "$TEST_HOME/.config/worktrunk/state.yml" ]] || fail 'Worktrunk state was not restored'
+[[ ! -e "$TEST_HOME/.config/worktrunk/config.toml" ]] ||
+  fail 'legacy Worktrunk link was restored after uninstall'
+[[ ! -e "$TEST_HOME/.config/bat" ]] || fail 'legacy Bat directory was restored after uninstall'
 grep -Fq 'existing yazi config' "$TEST_HOME/.config/yazi/yazi.toml" || fail 'Yazi backup was not restored'
 grep -Fq 'existing starship config' "$TEST_HOME/.config/starship.toml" || fail 'starship backup was not restored'
 [[ ! -L "$TEST_HOME/.local/bin/git-aliases" ]] || fail 'Git alias guide symlink remained after uninstall'

@@ -11,8 +11,10 @@ tools=(
   fzf
   zoxide
   bat
+  btop
   glow
   hunk
+  lazygit
   wt
   herdr
   codex

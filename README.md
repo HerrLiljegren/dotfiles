@@ -8,7 +8,7 @@ machine-specific setup remain outside this repository.
 
 - Bash and Zsh, including history, completion, aliases, and vendored plugins
 - Git behavior, aliases, global ignores, and Delta
-- Bat, Ghostty, Glow, Hunk, Neovim, Ov, Starship, Worktrunk, and Yazi
+- Bat, Btop, Ghostty, Glow, Hunk, Lazygit, Neovim, Ov, Starship, Worktrunk, and Yazi
 - Herdr and its optional plugins
 - Global Codex working agreements
 
