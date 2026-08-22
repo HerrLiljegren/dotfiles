@@ -1,32 +1,23 @@
 # Portable development dotfiles
 
-Public, credential-free configuration for Linux, WSL, and Linux-based
-devcontainers. The repository does not install applications or project
-runtimes. Explicit optional setup may install plugins through an existing tool.
-
-## Ownership boundaries
-
-- A Dev Container Feature installs CLI tools and their system dependencies.
-- The devcontainer setup owns shared VS Code settings and extensions.
-- This repository owns the complete, shared terminal development experience.
+Shared, credential-free configuration for Linux, WSL, and Linux-based dev
+containers. Host packages, graphical desktop settings, identity, and other
+machine-specific setup remain outside this repository.
 
 ## Managed configuration
 
-- Bash and Zsh integration
-- Natural-language shell commands via pi (`cliq`) with verdict-gated safety
-- Shared Zsh history, fzf completion, autosuggestions, syntax highlighting,
-  and alias reminders
-- Git behavior, OMZ-compatible aliases, an alias guide, and global ignores
-- Bat, Delta, Ghostty, Glow, Hunk, Starship, and Neovim
-- Worktrunk and Herdr
+- Bash and Zsh, including history, completion, aliases, and vendored plugins
+- Git behavior, aliases, global ignores, and Delta
+- Bat, Ghostty, Glow, Hunk, Neovim, Ov, Starship, Worktrunk, and Yazi
+- Herdr and its optional plugins
 - Global Codex working agreements
 
-No profile system is used. The public configuration is the shared team
-configuration.
+The repository configures existing applications. Only explicit optional setup
+may download plugins.
 
-## Installation
+## Install
 
-Clone the repository to a stable location because managed files are symlinks:
+Clone to a stable path because installed files are symlinks:
 
 ```bash
 mkdir -p "${XDG_DATA_HOME:-$HOME/.local/share}" \
@@ -34,18 +25,12 @@ mkdir -p "${XDG_DATA_HOME:-$HOME/.local/share}" \
   && "${XDG_DATA_HOME:-$HOME/.local/share}/dotfiles/install.sh"
 ```
 
-`install.sh` resolves its own location, supports any non-root `$HOME`, and can
-be run repeatedly. Existing unmanaged destinations are moved once to a sibling
-with the `.pre-dotfiles` suffix. If that backup already exists, installation
-stops rather than overwriting either file.
+The installer is idempotent. It preserves existing shell and Git files through
+managed blocks, and moves conflicting destinations to `.pre-dotfiles` backups.
+Installation stops rather than overwrite an existing backup.
 
-When standard input and output are attached to a terminal, the installer asks
-whether to install dotfiles only or everything. Dotfiles only is the default.
-Everything includes the latest Herdr plugins; the prompt explains that this
-requires network access and may run third-party build commands.
-
-Non-interactive installation remains configuration-only. Automation can select
-optional setup explicitly:
+Interactive runs offer configuration-only installation or all optional setup.
+Automation can choose explicitly:
 
 ```bash
 ./install.sh --with all
@@ -53,92 +38,45 @@ optional setup explicitly:
 ./install.sh --with none
 ```
 
-`--with` is repeatable for future optional setup. `all` and `none` cannot be
-combined with another selection. Run `./install.sh --help` for the complete
-interface.
+Run `./install.sh --help` for the current options.
 
-The installer preserves existing `.bashrc`, `.zshrc`, `.gitconfig`, and Git
-credential helpers. It adds clearly marked source/include blocks instead of
-replacing those files.
+## Local shell configuration
 
-### Local configuration
-
-The shell is fully usable without local configuration. Portable Bash/Zsh
-exports may be added in:
+Optional Bash/Zsh exports may be added to:
 
 ```text
 ~/.config/dotfiles/local.sh
 ```
 
-Zsh-only options, functions, or bindings belong in:
+Zsh-only configuration may be added to:
 
 ```text
 ~/.config/dotfiles/personal.zsh
 ```
 
-Both files are optional and remain outside this repository. Do not set or
-unset `ZDOTDIR` in `.zshenv` or either local file. VS Code temporarily owns
-that variable while injecting its shell integration.
+Keep `ZDOTDIR` unchanged in these files; VS Code temporarily sets it while
+injecting shell integration.
 
-### Git aliases
+## Shell tools
 
-The shared Bash and Zsh aliases are a curated subset of the Oh My Zsh Git
-plugin. Their definitions are verified against a pinned upstream snapshot.
-Run `ghelp` for a compact overview, `ghelp <alias-or-category>` for usage
-guidance, or `ghelp --all` for the complete guide.
+`ghelp` documents the shared Git aliases. Use `ghelp <alias-or-category>` or
+`ghelp --all` for more detail.
 
-### Natural-language shell commands
+`cliq` asks pi for a shell command and inserts it for review. `cliq --run`
+executes suggestions that pass its static safety gate; `--force` is required
+for commands classified as dangerous. Executed suggestions are logged under
+`~/.local/share/cliq/log`.
 
-`cliq` turns a plain-language request into a shell command using pi (`pi -p`)
-with the `opencode-go/deepseek-v4-flash` model; override the model with
-`CLIQ_MODEL`. By default the command is inserted into the edit buffer for
-review and nothing runs. `cliq -x` / `cliq --run` executes only after a
-static verdict gate (ok/caution/danger) applies friction scaled to the risk:
-a plain yes/no for ok, typed confirmation of the command's first characters
-for caution (override the length with `CLIQ_CONFIRM_CHARS`), and a refusal
-for danger unless `--force` is passed. Executed suggestions are appended to
-`~/.local/share/cliq/log` because eval'ed commands never reach zsh history.
-The verdict never trusts the model; the shell's own pattern gate decides.
+Herdr plugins are installed only when selecting `herdr-plugins` or `all`.
+Their sources are declared in `config/herdr/plugins.tsv`.
 
-### Vendored Zsh plugins
+## Dev containers
 
-Runtime files for autosuggestions, history substring search, syntax
-highlighting, fzf-tab, and alias reminders are pinned under `vendor/zsh`.
-The pinned Oh My Zsh Git plugin is retained there as the alias reference.
-Shell startup never clones or updates plugins. Upstream revisions and retained
-licenses are documented in `vendor/zsh/README.md`.
+A dev-container setup should install required binaries, clone this repository
+at a pinned commit, and run `install.sh` as the non-root user. The consumer owns
+the selected revision; the installer never updates its checkout.
 
-### Herdr plugins
-
-The Herdr configuration depends on the plugins declared in
-`config/herdr/plugins.tsv`. Selecting `herdr-plugins` or `all` runs
-`herdr plugin install <source> --yes` for every declaration. Each invocation
-installs or refreshes the latest upstream version; Herdr owns the resulting
-plugin checkouts and state.
-
-The `herdr-splits.nvim` repository supplies two cooperating parts. Herdr owns
-the `herdr-splits` plugin installed by the optional setup, while Lazy.nvim owns
-the Neovim plugin declared under `config/nvim`.
-
-## Devcontainer integration
-
-The devcontainer setup should:
-
-1. Install required binaries through the separate Dev Container Feature.
-2. Clone this repository at a pinned commit into a stable path under the
-   container user's home directory.
-3. Run `install.sh` as the non-root remote user.
-
-The dotfiles installer does not install packages or project runtimes and does
-not update its own Git checkout.
-
-## Updating
-
-The consumer controls the selected Git revision. Update the pinned commit,
-check out that revision in the stable clone, and run `install.sh` again. A
-local checkout may track `main` when pinned updates are unnecessary.
-
-## Verification
+## Verify
 
 ```bash
 bash -n install.sh install/optional/herdr-plugins.sh uninstall.sh doctor.sh
@@ -152,24 +90,18 @@ bash tests/install.sh
 ./doctor.sh
 ```
 
-The test installs twice into a temporary home, verifies ordinary and VS
-Code-injected Zsh startup, confirms the second install makes no changes,
-preserves an existing Git credential helper, and exercises uninstall and
-backup restoration.
-
-## Uninstalling
+## Uninstall
 
 ```bash
 ./uninstall.sh
 ```
 
-Uninstall removes only symlinks that still point into this checkout, restores
-`.pre-dotfiles` backups, and removes the managed shell and Git blocks. It does
-not remove applications, caches, or the repository checkout.
+Uninstall removes managed links and blocks and restores `.pre-dotfiles`
+backups. Applications, caches, and the checkout remain untouched.
 
 ## Security
 
-Never commit credentials, authentication state, SSH material, private hosts,
-employer details, session history, generated conversations, or machine
-identifiers. Authentication remains the responsibility of the host,
-devcontainer, or an external secret manager.
+Keep credentials, authentication state, SSH material, private hosts, employer
+details, session history, generated conversations, and machine identifiers out
+of the repository. Use the host or an external secret manager for
+authentication.
