@@ -9,9 +9,6 @@ runtimes. Explicit optional setup may install plugins through an existing tool.
 - A Dev Container Feature installs CLI tools and their system dependencies.
 - The devcontainer setup owns shared VS Code settings and extensions.
 - This repository owns the complete, shared terminal development experience.
-- A separate private workstation repository owns host packages, Ghostty,
-  Windows Terminal, local VS Code preferences, identity, work details, and
-  machine-specific setup.
 
 ## Managed configuration
 
@@ -20,7 +17,7 @@ runtimes. Explicit optional setup may install plugins through an existing tool.
 - Shared Zsh history, fzf completion, autosuggestions, syntax highlighting,
   and alias reminders
 - Git behavior, OMZ-compatible aliases, an alias guide, and global ignores
-- Bat, Delta, Glow, Hunk, Starship, and Neovim
+- Bat, Delta, Ghostty, Glow, Hunk, Starship, and Neovim
 - Worktrunk and Herdr
 - Global Codex working agreements
 
@@ -64,10 +61,10 @@ The installer preserves existing `.bashrc`, `.zshrc`, `.gitconfig`, and Git
 credential helpers. It adds clearly marked source/include blocks instead of
 replacing those files.
 
-### Personal configuration
+### Local configuration
 
-The public shell is fully usable without a personal layer. A private
-workstation repository may add portable Bash/Zsh exports in:
+The shell is fully usable without local configuration. Portable Bash/Zsh
+exports may be added in:
 
 ```text
 ~/.config/dotfiles/local.sh
@@ -80,7 +77,7 @@ Zsh-only options, functions, or bindings belong in:
 ```
 
 Both files are optional and remain outside this repository. Do not set or
-unset `ZDOTDIR` in `.zshenv` or either personal file. VS Code temporarily owns
+unset `ZDOTDIR` in `.zshenv` or either local file. VS Code temporarily owns
 that variable while injecting its shell integration.
 
 ### Git aliases
@@ -138,9 +135,8 @@ not update its own Git checkout.
 ## Updating
 
 The consumer controls the selected Git revision. Update the pinned commit,
-check out that revision in the stable clone, and run `install.sh` again. Your
-private workstation setup may track `main` if you prefer faster personal
-updates.
+check out that revision in the stable clone, and run `install.sh` again. A
+local checkout may track `main` when pinned updates are unnecessary.
 
 ## Verification
 
