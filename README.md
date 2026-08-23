@@ -81,6 +81,7 @@ the selected revision; the installer never updates its checkout.
 ```bash
 bash -n install.sh install/optional/herdr-plugins.sh uninstall.sh doctor.sh
 bash -n tests/install.sh tests/install-options.sh
+bash tests/herdr-install.sh
 bash tests/install-options.sh
 bash tests/git-alias-guide.sh
 bash tests/skillset.sh

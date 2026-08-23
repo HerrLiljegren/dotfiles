@@ -46,6 +46,9 @@ actual_calls="$(<"$HERDR_LOG")"
   printf 'actual Herdr calls:\n%s\n' "$actual_calls" >&2
   fail '--with all did not install every Herdr plugin'
 }
+[[ -d "$TEST_HOME/.config/herdr" && ! -L "$TEST_HOME/.config/herdr" ]] ||
+  fail '--with all replaced Herdr state with a symlink'
+[[ -L "$TEST_HOME/.config/herdr/config.toml" ]] || fail '--with all did not link Herdr config'
 
 : >"$HERDR_LOG"
 PATH="$FAKE_BIN:$PATH" \

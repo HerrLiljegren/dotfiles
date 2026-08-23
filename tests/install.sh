@@ -44,6 +44,9 @@ for legacy_link in "${legacy_links[@]}"; do
   ln -s "$ROOT/config/$legacy_link" "$TEST_HOME/.config/$legacy_link"
 done
 
+mkdir -p -- "$TEST_HOME/.config/herdr/plugins/github/example"
+printf 'installed plugin\n' >"$TEST_HOME/.config/herdr/plugins/github/example/herdr-plugin.toml"
+printf '[]\n' >"$TEST_HOME/.config/herdr/plugins.json"
 printf 'existing worktrunk state\n' >"$TEST_HOME/.config/worktrunk/state.yml"
 
 before_status="$(git -C "$ROOT" status --porcelain=v1)"
@@ -65,7 +68,12 @@ grep -Fq 'existing-model' "$TEST_HOME/.codex/config.toml" || fail 'Codex config 
   fail 'legacy Worktrunk link was included in the backup'
 [[ -L "$TEST_HOME/.config/yazi" ]] || fail 'Yazi config was not linked'
 [[ -f "$TEST_HOME/.config/yazi.pre-dotfiles/yazi.toml" ]] || fail 'existing Yazi config was not backed up'
-[[ -L "$TEST_HOME/.config/herdr" ]] || fail 'Herdr config was not linked'
+[[ -d "$TEST_HOME/.config/herdr" && ! -L "$TEST_HOME/.config/herdr" ]] ||
+  fail 'Herdr state directory was replaced with a symlink'
+[[ -L "$TEST_HOME/.config/herdr/config.toml" ]] || fail 'Herdr config was not linked'
+[[ -f "$TEST_HOME/.config/herdr/plugins/github/example/herdr-plugin.toml" ]] ||
+  fail 'Herdr plugin state was not preserved'
+[[ -f "$TEST_HOME/.config/herdr/plugins.json" ]] || fail 'Herdr plugin registry was not preserved'
 [[ -L "$TEST_HOME/.config/bat" ]] || fail 'Bat config was not linked'
 [[ ! -e "$TEST_HOME/.config/bat.pre-dotfiles" ]] || fail 'legacy Bat directory was backed up'
 [[ -L "$TEST_HOME/.config/btop" ]] || fail 'Btop config was not linked'
@@ -160,7 +168,12 @@ XDG_CONFIG_HOME="$TEST_HOME/.config" \
 [[ ! -L "$TEST_HOME/.config/bat" ]] || fail 'Bat symlink remained after uninstall'
 [[ ! -L "$TEST_HOME/.config/delta" ]] || fail 'Delta symlink remained after uninstall'
 [[ ! -L "$TEST_HOME/.config/glow" ]] || fail 'Glow symlink remained after uninstall'
-[[ ! -L "$TEST_HOME/.config/herdr" ]] || fail 'Herdr symlink remained after uninstall'
+[[ -d "$TEST_HOME/.config/herdr" && ! -L "$TEST_HOME/.config/herdr" ]] ||
+  fail 'Herdr state directory was removed after uninstall'
+[[ ! -L "$TEST_HOME/.config/herdr/config.toml" ]] || fail 'Herdr config symlink remained after uninstall'
+[[ -f "$TEST_HOME/.config/herdr/plugins/github/example/herdr-plugin.toml" ]] ||
+  fail 'Herdr plugin state was removed after uninstall'
+[[ -f "$TEST_HOME/.config/herdr/plugins.json" ]] || fail 'Herdr plugin registry was removed after uninstall'
 [[ ! -L "$TEST_HOME/.config/hunk" ]] || fail 'Hunk symlink remained after uninstall'
 [[ ! -L "$TEST_HOME/.config/ov" ]] || fail 'Ov symlink remained after uninstall'
 [[ ! -L "$TEST_HOME/.config/worktrunk" ]] || fail 'Worktrunk symlink remained after uninstall'

@@ -204,6 +204,37 @@ migrate_legacy_directory() {
   rmdir --ignore-fail-on-non-empty -- "$destination"
 }
 
+configure_herdr() {
+  local source=$1
+  local destination=$2
+  local backup="${destination}${BACKUP_SUFFIX}"
+
+  # Older installs linked the whole directory and displaced Herdr's plugin and
+  # session state. Restore that state directory before managing config.toml.
+  if [[ -L "$destination" ]] && [[ "$(readlink -- "$destination")" == "$source" ]]; then
+    if command -v herdr >/dev/null 2>&1 && herdr status server >/dev/null 2>&1; then
+      die 'stop the Herdr server before migrating its configuration directory, then rerun the installer'
+    fi
+
+    rm -- "$destination"
+    if [[ -e "$backup" || -L "$backup" ]]; then
+      [[ -d "$backup" && ! -L "$backup" ]] ||
+        die "cannot restore Herdr state from non-directory backup: $backup"
+      mv -- "$backup" "$destination"
+      log "restored $destination"
+    else
+      mkdir -p -- "$destination"
+      log "created $destination"
+    fi
+  elif [[ -L "$destination" || (-e "$destination" && ! -d "$destination") ]]; then
+    die "cannot manage non-directory Herdr state path: $destination"
+  else
+    mkdir -p -- "$destination"
+  fi
+
+  link_path "$source/config.toml" "$destination/config.toml"
+}
+
 ensure_block() {
   local destination=$1
   local name=$2
@@ -294,10 +325,6 @@ migrate_legacy_directory \
   "$XDG_CONFIG_HOME/glow" \
   'glow.yml'
 migrate_legacy_directory \
-  "$ROOT/config/herdr" \
-  "$XDG_CONFIG_HOME/herdr" \
-  'config.toml'
-migrate_legacy_directory \
   "$ROOT/config/hunk" \
   "$XDG_CONFIG_HOME/hunk" \
   'config.toml'
@@ -318,7 +345,7 @@ link_path \
   "$XDG_CONFIG_HOME/ghostty" \
   "../dotfiles/ghostty/.config/ghostty"
 link_path "$ROOT/config/glow" "$XDG_CONFIG_HOME/glow"
-link_path "$ROOT/config/herdr" "$XDG_CONFIG_HOME/herdr"
+configure_herdr "$ROOT/config/herdr" "$XDG_CONFIG_HOME/herdr"
 link_path "$ROOT/config/hunk" "$XDG_CONFIG_HOME/hunk"
 link_path "$ROOT/config/lazygit" "$XDG_CONFIG_HOME/lazygit"
 link_path "$ROOT/config/nvim" "$XDG_CONFIG_HOME/nvim"

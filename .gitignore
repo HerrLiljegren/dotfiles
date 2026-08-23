@@ -27,5 +27,10 @@ __pycache__/
 **/.tmp/
 **/tmp/
 
+# Herdr runtime state; only desired configuration belongs in this repository
+/config/herdr/*
+!/config/herdr/config.toml
+!/config/herdr/plugins.tsv
+
 # Throwaway design artifacts
 /prototypes/
