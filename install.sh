@@ -212,7 +212,8 @@ configure_herdr() {
   # Older installs linked the whole directory and displaced Herdr's plugin and
   # session state. Restore that state directory before managing config.toml.
   if [[ -L "$destination" ]] && [[ "$(readlink -- "$destination")" == "$source" ]]; then
-    if command -v herdr >/dev/null 2>&1 && herdr status server >/dev/null 2>&1; then
+    if command -v herdr >/dev/null 2>&1 &&
+      [[ "$(herdr status server --json 2>/dev/null)" == *'"running":true'* ]]; then
       die 'stop the Herdr server before migrating its configuration directory, then rerun the installer'
     fi
 
