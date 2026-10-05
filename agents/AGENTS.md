@@ -3,13 +3,32 @@
 - No fallbacks.
 - Lead with the outcome and keep explanations proportionate to the task.
 - Preserve unrelated user changes and call out overlapping edits.
-- Run the smallest relevant verification after changing code or configuration.
 - Comment non-obvious decisions, constraints, and failure modes that the code
   cannot make clear. For public .NET APIs, use XML documentation when it adds
   contract or behavioral context; omit comments that only restate the code.
 - Never print, commit, or copy credentials, authentication state, or session
   history.
-- Ask before destructive operations or changes that affect external systems.
+- Reuse authorization already given for the same action and scope. Ask before
+  destructive or external changes that need new authority.
+- Explicit user instructions take precedence over skill guidelines. When a
+  rule blocks progress, cite its file and wording and the missing decision.
+- Report the outcome, verification evidence, and remaining gates; distinguish
+  local results from pending CI or human verification.
+
+## Verification
+
+- Choose the smallest checks that cover changed behavior and likely regression
+  risks. Reuse existing coverage; add tests when a behavior or regression needs
+  it. Documentation-only changes need relevant static checks.
+- Follow repository-required verification. Before expanding beyond affected
+  checks, name the concrete risk or explicit requirement that justifies it.
+- Reuse passing results while relevant code, dependencies, configuration, and
+  environment remain unchanged. Once required checks pass, stop testing;
+  repeat or broaden checks only for relevant changes, failures, or concrete
+  unresolved concerns.
+- Avoid duplicate builds when the selected checks already build all required
+  targets in the required configuration. Report scope, results, and log paths
+  concisely instead of repeatedly streaming full output.
 
 ## Commit style
 
@@ -79,6 +98,7 @@ second time.
 
 ## Host-local guidance
 
-If `~/.agents/local.md` exists, read it and any files it explicitly references
-before working. Host-local instructions supplement this public baseline with
-private workspace routing and conventions.
+If `~/.agents/local.md` exists, read it and follow its routing rules. Read
+linked guidance only when its stated condition applies. Host-local
+instructions supplement this public baseline with private workspace routing
+and conventions.
