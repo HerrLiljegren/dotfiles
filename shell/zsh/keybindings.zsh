@@ -19,6 +19,19 @@ bindkey '^[[1~' beginning-of-line
 bindkey '^[[4~' end-of-line
 bindkey '^[[3~' delete-char
 
+# Ctrl+Arrow: match the plain arrows — left/right move by word, up/down run
+# history-substring-search. Bind both the long (\e[1;5X) and short (\e[5X)
+# CSI forms so it works regardless of the terminal encoding (Ghostty, xterm,
+# kitty).
+bindkey '^[[1;5C' forward-word
+bindkey '^[[1;5D' backward-word
+bindkey '^[[5C' forward-word
+bindkey '^[[5D' backward-word
+bindkey '^[[1;5A' history-substring-search-up
+bindkey '^[[1;5B' history-substring-search-down
+bindkey '^[[5A' history-substring-search-up
+bindkey '^[[5B' history-substring-search-down
+
 if [[ -n "${terminfo[khome]-}" ]]; then
   bindkey "${terminfo[khome]}" beginning-of-line
 fi
