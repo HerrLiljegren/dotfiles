@@ -1,5 +1,11 @@
 return {
   {
+    "nvim-treesitter/nvim-treesitter",
+    opts = {
+      ensure_installed = { "razor" },
+    },
+  },
+  {
     "mason-org/mason.nvim",
     opts = {
       ensure_installed = {
@@ -13,6 +19,8 @@ return {
       opts.servers = opts.servers or {}
       opts.servers.omnisharp = { enabled = false }
       opts.servers.roslyn_ls = { enabled = false }
+      -- Razor forwards HTML requests to this server's virtual documents.
+      opts.servers.html = {}
     end,
   },
   {
@@ -21,7 +29,8 @@ return {
   },
   {
     "seblyng/roslyn.nvim",
-    ft = { "cs", "razor", "cshtml" },
+    -- Apply watcher capabilities before the first FileType starts Roslyn.
+    lazy = false,
     init = function()
       vim.lsp.config("roslyn", {
         settings = {
