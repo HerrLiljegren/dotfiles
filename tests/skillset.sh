@@ -33,6 +33,7 @@ run_skillset() {
   FAKE_GH_FAIL_INSTALL="${FAKE_GH_FAIL_INSTALL:-}" \
   FAKE_GH_REQUIRE_EXACT_PARALLEL="${FAKE_GH_REQUIRE_EXACT_PARALLEL:-}" \
   FAKE_GH_REQUIRE_PARALLEL="${FAKE_GH_REQUIRE_PARALLEL:-}" \
+  FAKE_GH_FAIL_UPDATE="${FAKE_GH_FAIL_UPDATE:-}" \
   PATH="$FAKE_BIN:$PATH" \
     "$SCRIPT" "$@"
 }
@@ -104,12 +105,14 @@ printf '%s\n' \
   '    selector=${4:-}' \
   '    source_repo=${3:-}' \
   '    if [[ ${FAKE_GH_REQUIRE_EXACT_PARALLEL:-} == 1 && $selector == */SKILL.md ]]; then' \
-  '      marker="$GH_LOG.exact-parallel.$BASHPID"' \
+  '      marker_prefix="$GH_LOG.exact-parallel"' \
+  '      [[ " $* " != *" --force "* ]] || marker_prefix="$GH_LOG.exact-apply-parallel"' \
+  '      marker="$marker_prefix.$BASHPID"' \
   '      : >"$marker"' \
   '      ready=0' \
   '      for ((attempt=0; attempt < 200; attempt++)); do' \
   '        count=0' \
-  '        for candidate in "$GH_LOG".exact-parallel.*; do' \
+  '        for candidate in "$marker_prefix".*; do' \
   '          [[ ! -e $candidate ]] || count=$((count + 1))' \
   '        done' \
   '        if ((count >= 2)); then ready=1; break; fi' \
@@ -135,6 +138,11 @@ printf '%s\n' \
   '    ;;' \
   '  "skill update")' \
   '    printf "%s\n" "$*" >>"$GH_LOG"' \
+  '    if [[ ${FAKE_GH_FAIL_UPDATE:-} == 1 ]]; then printf "fake update failed\n" >&2; exit 42; fi' \
+  '    if [[ " $* " != *" --dry-run "* && " $* " != *" --all "* ]]; then' \
+  '      printf "updates available; re-run with --all to apply, or run interactively to confirm\n" >&2' \
+  '      exit 1' \
+  '    fi' \
   '    if [[ ${FAKE_GH_REQUIRE_PARALLEL:-} == 1 ]]; then' \
   '      marker="$GH_LOG.parallel.$BASHPID"' \
   '      : >"$marker"' \
@@ -318,6 +326,17 @@ if grep -Fq 'failed' "$TEST_ROOT/parallel.progress"; then
   fail 'same-source exact-path checks did not run concurrently'
 fi
 
+rm -f -- "$GH_LOG".exact-parallel.* "$GH_LOG".exact-apply-parallel.*
+printf '\n' | FAKE_GH_REQUIRE_EXACT_PARALLEL=1 \
+SKILLSET_MANIFEST="$parallel_manifest" SKILLSET_CATALOG="$parallel_catalog" \
+  run_skillset update >"$TEST_ROOT/parallel-update.out" 2>"$TEST_ROOT/parallel-update.progress"
+for name in exact-one exact-two; do
+  grep -Fq 'github-tree-sha: new-tree-sha' "$parallel_catalog/$name/SKILL.md" ||
+    fail 'parallel update did not apply every confirmed exact-path update'
+done
+grep -Fq 'Updated exact-one.' "$TEST_ROOT/parallel-update.out" ||
+  fail 'parallel update did not report exact-path success'
+
 FAKE_GH_REQUIRE_PARALLEL=1 run_skillset updates \
   >"$TEST_ROOT/updates.out" 2>"$TEST_ROOT/updates.progress"
 updates_output="$(<"$TEST_ROOT/updates.out")"
@@ -331,13 +350,33 @@ grep -Fq 'skills checked across' "$TEST_ROOT/updates.progress" ||
   fail 'updates did not report the exact-path update'
 [[ "$updates_output" != *'All skills are up to date.'* ]] ||
   fail 'updates leaked current skill output'
-printf '\n' | run_skillset update >/dev/null
+rm -f -- "$GH_LOG".parallel.*
+printf '\n' | FAKE_GH_REQUIRE_PARALLEL=1 run_skillset update >/dev/null
 grep -Fq 'skill update ' "$GH_LOG" || fail 'update commands were not delegated to gh skill'
 grep -Fq -- '--dry-run' "$GH_LOG" || fail 'updates did not use dry-run'
 grep -Fq 'github-tree-sha: new-tree-sha' "$CATALOG/exact/SKILL.md" ||
   fail 'update did not refresh the exact-path skill'
 if grep -Fq ' exact ' "$GH_LOG"; then
   fail 'exact-path skill was delegated to gh skill update discovery'
+fi
+
+sed -i 's/new-tree-sha/old-tree-sha/' "$CATALOG/exact/SKILL.md"
+: >"$GH_LOG.install"
+printf 'n\n' | run_skillset update >"$TEST_ROOT/declined-update.out"
+grep -Fq 'Skipped exact-path updates.' "$TEST_ROOT/declined-update.out" ||
+  fail 'update did not retain the exact-path confirmation'
+if grep -Fq -- '--force' "$GH_LOG.install"; then
+  fail 'declining confirmation still applied an exact-path update'
+fi
+
+: >"$GH_LOG.install"
+if FAKE_GH_FAIL_UPDATE=1 run_skillset update >"$TEST_ROOT/failed-update.out" 2>&1; then
+  fail 'parallel update reported success when a worker failed'
+fi
+grep -Fq 'fake update failed' "$TEST_ROOT/failed-update.out" ||
+  fail 'parallel update lost worker failure diagnostics'
+if grep -Fq -- '--force' "$GH_LOG.install"; then
+  fail 'parallel update applied exact-path updates after a worker failed'
 fi
 
 : >"$GH_LOG.install"

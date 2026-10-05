@@ -30,13 +30,6 @@
       "enabled": true
     },
     {
-      "name": "codex-resets",
-      "source": "HerrLiljegren/skills",
-      "selector": "skills/productivity/codex-resets/SKILL.md",
-      "description": "Safely show available Codex reset credits.",
-      "enabled": true
-    },
-    {
       "name": "defuddle",
       "source": "kepano/obsidian-skills",
       "selector": "defuddle",
@@ -120,6 +113,14 @@
       "selector": "implement",
       "description": "Run an opinionated implementation, review, and commit workflow.",
       "enabled": true
+    },
+    {
+      "name": "implement-spec",
+      "source": "mattpocock/skills",
+      "selector": "implement-spec",
+      "description": "Implement the result of /to-spec and /to-tickets in code.",
+      "enabled": true,
+      "hidden": false
     },
     {
       "name": "improve",
@@ -213,17 +214,18 @@
       "enabled": true
     },
     {
+      "name": "pr",
+      "source": "mattpocock/skills",
+      "selector": "pr",
+      "description": "Use when writing a PR body.",
+      "enabled": true,
+      "hidden": false
+    },
+    {
       "name": "presentation-creator",
       "source": "mblode/agent-skills",
       "selector": "presentation-creator",
       "description": "Creates bold, minimal presentations built on a story spine, with punchy slide copy, high-contrast visual design (full-bleed palettes or dark with section accents), and conversational speaker notes. Covers live talks, async/recorded decks, 10-slide investor pitch decks, and decks built as a web app with a route per slide and live demos. Use when creating a presentation, structuring a deck, writing slides, building a pitch deck for investors, fixing a deck that has no narrative, or asking \"outline a presentation about...\", \"write slides for...\", \"design a deck for...\", \"turn this doc into a deck\", \"my talk has no story\", or \"build this deck as a website\". For long-form articles use the external ghostwriter skill with platform blog; for marketing copy outside slides use copywriting; for product UI design systems use ui-design.",
-      "enabled": true
-    },
-    {
-      "name": "primer",
-      "source": "HerrLiljegren/skills",
-      "selector": "engineering/primer",
-      "description": "Create a ready-to-paste primer for continuing current technical work in a fresh agent session.",
       "enabled": true
     },
     {
@@ -245,7 +247,15 @@
       "source": "mattpocock/skills",
       "selector": "resolving-merge-conflicts",
       "description": "Resolve an active merge or rebase conflict.",
-      "enabled": true
+      "enabled": false
+    },
+    {
+      "name": "retro",
+      "source": "mattpocock/skills",
+      "selector": "retro",
+      "description": "Conduct a retrospective on a coding session.",
+      "enabled": true,
+      "hidden": false
     },
     {
       "name": "review-presentation",
@@ -261,6 +271,14 @@
       "selector": "src/SeqCli/Skills/Resources/seq-search-and-query/SKILL.md",
       "description": "Search and query logs and spans in Seq.",
       "enabled": true
+    },
+    {
+      "name": "setup-matt-pocock-skills",
+      "source": "mattpocock/skills",
+      "selector": "setup-matt-pocock-skills",
+      "description": "Configure this repo for the engineering skills: set up its issue tracker, triage label vocabulary, and domain doc layout. Run once before first use of the other engineering skills.",
+      "enabled": true,
+      "hidden": false
     },
     {
       "name": "show-me",
@@ -319,13 +337,6 @@
       "enabled": true
     },
     {
-      "name": "vim-helper",
-      "source": "HerrLiljegren/skills",
-      "selector": "skills/productivity/vim-helper/SKILL.md",
-      "description": "Answer Vim, Neovim, and Zed Vim-mode questions using the real editor configuration.",
-      "enabled": true
-    },
-    {
       "name": "visualize",
       "source": "scaccogatto/okf-skills",
       "selector": "visualize",
@@ -347,40 +358,10 @@
       "enabled": true
     },
     {
-      "name": "where-were-we",
-      "source": "HerrLiljegren/skills",
-      "selector": "skills/productivity/where-were-we/SKILL.md",
-      "description": "Reconstruct interrupted work and identify the next useful step.",
-      "enabled": true
-    },
-    {
-      "name": "worktree-closeout",
-      "source": "HerrLiljegren/skills",
-      "selector": "in-progress/worktree-closeout",
-      "description": "Deliver and close one approved issue worktree without a pull request.",
-      "enabled": true,
-      "hidden": false
-    },
-    {
-      "name": "worktree-space",
-      "source": "HerrLiljegren/skills",
-      "selector": "in-progress/worktree-space",
-      "description": "Create a Worktrunk-managed worktree and matching herdr space from an issue number plus title, or from a supplied worktree name.",
-      "enabled": true,
-      "hidden": false
-    },
-    {
       "name": "writing-for-agents",
       "source": "mattpocock/skills",
       "selector": "productivity/writing-for-agents",
       "description": "Writing documents for agents. Use when creating or editing skills, or modifying AGENTS.md or CLAUDE.md.",
-      "enabled": true
-    },
-    {
-      "name": "x-thread-resource",
-      "source": "HerrLiljegren/skills",
-      "selector": "skills/productivity/x-thread-resource/SKILL.md",
-      "description": "Parse X and Twitter status URLs through twitter-thread.com's public unroll endpoint, inspect a bounded set of public linked pages, and return source-grounded Markdown or JSON. Use when the user asks to read, unroll, summarize, capture, or bookmark an X or Twitter thread.",
       "enabled": true
     }
   ]

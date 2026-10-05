@@ -52,7 +52,8 @@ Commands
       Example: skillset updates
 
   update
-      Apply available upstream changes. Updates sourced from a specific
+      Apply upstream changes across up to eight repositories in parallel.
+      Updates sourced from a specific
       SKILL.md path ask for confirmation before they are installed.
       Example: skillset update
 
@@ -275,35 +276,6 @@ skill_hidden() {
   [[ "$github_path" == .* ]]
 }
 
-inspect_exact_path_updates() {
-  local name source selector hidden current_sha latest_sha
-
-  while IFS=$'\t' read -r name source selector hidden; do
-    printf 'Checking exact-path skill: %s (%s)\n' "$name" "$source" >&2
-    TEMP_DIR="$(mktemp -d /tmp/skillset-update.XXXXXX)"
-    if [[ "$hidden" == true ]]; then
-      quiet_skill_install "$source" "$selector" --dir "$TEMP_DIR" --allow-hidden-dirs
-    else
-      quiet_skill_install "$source" "$selector" --dir "$TEMP_DIR"
-    fi
-    [[ -f "$TEMP_DIR/$name/SKILL.md" ]] ||
-      die "gh skill installed an unexpected layout for: $name"
-    current_sha="$(metadata_tree_sha "$CATALOG/$name/SKILL.md")"
-    latest_sha="$(metadata_tree_sha "$TEMP_DIR/$name/SKILL.md")"
-    [[ -n "$current_sha" && -n "$latest_sha" ]] ||
-      die "exact-path skill is missing update metadata: $name"
-    [[ "$current_sha" == "$latest_sha" ]] ||
-      printf '%s\t%s\t%s\t%s\n' "$name" "$source" "$selector" "$hidden"
-    rm -rf -- "$TEMP_DIR"
-    TEMP_DIR=''
-  done < <(jq -r '
-    .skills[] |
-    select((.selector | endswith("/SKILL.md")) or (.hidden // false)) |
-    [.name, .source, .selector, ((.hidden // false) | tostring)] |
-    @tsv
-  ' "$MANIFEST")
-}
-
 check_exact_update() {
   local source=$1 name=$2 selector=$3 result_dir=$4 hidden=${5:-}
   local output current_sha latest_sha install_dir
@@ -331,8 +303,8 @@ check_exact_update() {
 }
 
 check_update_group() {
-  local source=$1 result_dir=$2 name selector status=0 index exact_dir
-  local -a names=() exact_pids=() exact_dirs=()
+  local source=$1 result_dir=$2 dry_run=${3:-true} name selector status=0 index exact_dir
+  local -a names=() exact_pids=() exact_dirs=() command=(gh skill update)
 
   mapfile -t names < <(jq -r --arg source "$source" '
     .skills[] |
@@ -340,7 +312,14 @@ check_update_group() {
     .name
   ' "$MANIFEST")
   if ((${#names[@]} > 0)); then
-    if gh skill update "${names[@]}" --dir "$CATALOG" --dry-run >"$result_dir/regular.out" 2>&1; then
+    command+=("${names[@]}" --dir "$CATALOG")
+    if [[ "$dry_run" == true ]]; then
+      command+=(--dry-run)
+    else
+      # --all bypasses gh's prompt; explicit names still restrict catalog ownership.
+      command+=(--all)
+    fi
+    if "${command[@]}" >"$result_dir/regular.out" 2>&1; then
       printf '0\n' >"$result_dir/regular.status"
     else
       printf '%d\n' "$?" >"$result_dir/regular.status"
@@ -376,8 +355,11 @@ check_update_group() {
 }
 
 render_update_result() {
-  local source=$1 skill_count=$2 result_dir=$3 status=$4
+  local source=$1 skill_count=$2 result_dir=$3 status=$4 dry_run=${5:-true}
+  local activity='checked' changes='updates available'
   local regular_output='' exact_count=0 ok_mark='✓' update_mark='↑' error_mark='✕'
+
+  [[ "$dry_run" == true ]] || { activity='processed'; changes='updates processed'; }
 
   if [[ -t 2 && ${TERM:-dumb} != dumb && -z ${NO_COLOR:-} ]]; then
     ok_mark=$'\033[38;2;166;227;161m✓\033[0m'
@@ -393,11 +375,11 @@ render_update_result() {
   [[ ! -f "$result_dir/exact.updates" ]] || exact_count="$(wc -l <"$result_dir/exact.updates")"
 
   if ((status != 0)); then
-    printf '  %s  %-29s  %d/%d checked  failed\n' "$error_mark" "$source" "$skill_count" "$skill_count" >&2
+    printf '  %s  %-29s  %d/%d %s  failed\n' "$error_mark" "$source" "$skill_count" "$skill_count" "$activity" >&2
     [[ -z "$regular_output" ]] || sed 's/^/      /' <<<"$regular_output" >&2
     [[ ! -s "$result_dir/exact.errors" ]] || sed 's/^/      /' "$result_dir/exact.errors" >&2
   elif [[ -n "$regular_output" || "$exact_count" != 0 ]]; then
-    printf '  %s  %-29s  %d/%d checked  updates available\n' "$update_mark" "$source" "$skill_count" "$skill_count" >&2
+    printf '  %s  %-29s  %d/%d %s  %s\n' "$update_mark" "$source" "$skill_count" "$skill_count" "$activity" "$changes" >&2
     [[ -z "$regular_output" ]] || sed 's/^/      /' <<<"$regular_output"
     if [[ -f "$result_dir/exact.updates" ]]; then
       while IFS=$'\t' read -r name selector; do
@@ -405,11 +387,12 @@ render_update_result() {
       done <"$result_dir/exact.updates"
     fi
   else
-    printf '  %s  %-29s  %d/%d checked\n' "$ok_mark" "$source" "$skill_count" "$skill_count" >&2
+    printf '  %s  %-29s  %d/%d %s\n' "$ok_mark" "$source" "$skill_count" "$skill_count" "$activity" >&2
   fi
 }
 
 run_update_signals() {
+  local dry_run=${1:-true} failed=0 name selector hidden activity='checked'
   local max_parallel=8 group_total total_skills checked_skills=0 checked_repositories=0
   local started=$SECONDS next=0 active=0 completed=0 index source skill_count result_dir status
   local frame_index=0 dynamic_visible=false found frames=('⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏')
@@ -419,6 +402,10 @@ run_update_signals() {
   group_total=${#sources[@]}
   total_skills="$(jq '.skills | length' "$MANIFEST")"
   TEMP_DIR="$(mktemp -d /tmp/skillset-updates.XXXXXX)"
+  if [[ "$dry_run" == false ]]; then
+    TEMP_FILE="$(mktemp /tmp/skillset-exact-updates.XXXXXX)"
+    activity='processed'
+  fi
 
   while ((completed < group_total)); do
     while ((active < max_parallel && next < group_total)); do
@@ -430,7 +417,7 @@ run_update_signals() {
       result_dirs[next]=$result_dir
       processed[next]=false
       (
-        if check_update_group "$source" "$result_dir"; then status=0; else status=$?; fi
+        if check_update_group "$source" "$result_dir" "$dry_run"; then status=0; else status=$?; fi
         printf '%d\n' "$status" >"$result_dir/status"
       ) &
       pids[next]=$!
@@ -448,7 +435,14 @@ run_update_signals() {
       fi
       wait "${pids[index]}" || true
       status="$(<"${result_dirs[index]}/status")"
-      render_update_result "${sources[index]}" "${skill_counts[index]}" "${result_dirs[index]}" "$status"
+      render_update_result "${sources[index]}" "${skill_counts[index]}" "${result_dirs[index]}" "$status" "$dry_run"
+      ((status == 0)) || failed=1
+      if [[ "$dry_run" == false && -f ${result_dirs[index]}/exact.updates ]]; then
+        while IFS=$'\t' read -r name selector; do
+          hidden="$(jq -r --arg name "$name" '.skills[] | select(.name == $name) | (.hidden // false)' "$MANIFEST")"
+          printf '%s\t%s\t%s\t%s\n' "$name" "${sources[index]}" "$selector" "$hidden" >>"$TEMP_FILE"
+        done <"${result_dirs[index]}/exact.updates"
+      fi
       processed[index]=true
       active=$((active - 1))
       completed=$((completed + 1))
@@ -479,67 +473,69 @@ run_update_signals() {
   BACKGROUND_PIDS=()
   rm -rf -- "$TEMP_DIR"
   TEMP_DIR=''
-  printf '\n%d skills checked across %d repositories in %ds.\n' \
-    "$total_skills" "$group_total" "$((SECONDS - started))" >&2
+  printf '\n%d skills %s across %d repositories in %ds.\n' \
+    "$total_skills" "$activity" "$group_total" "$((SECONDS - started))" >&2
+  [[ "$dry_run" == true ]] || return "$failed"
+}
+
+apply_exact_updates() {
+  local start index end name source selector hidden status=0
+  local -a rows=() pids=() names=()
+
+  mapfile -t rows <"$TEMP_FILE"
+  TEMP_DIR="$(mktemp -d /tmp/skillset-apply.XXXXXX)"
+  # Catalog names are unique; workers write disjoint directories after one confirmation.
+  for ((start = 0; start < ${#rows[@]}; start += 8)); do
+    end=$((start + 8))
+    ((${#rows[@]} >= end)) || end=${#rows[@]}
+    for ((index = start; index < end; index++)); do
+      IFS=$'\t' read -r name source selector hidden <<<"${rows[index]}"
+      names[index]=$name
+      (
+        if [[ "$hidden" == true ]]; then
+          quiet_skill_install "$source" "$selector" --dir "$CATALOG" --force --allow-hidden-dirs
+        else
+          quiet_skill_install "$source" "$selector" --dir "$CATALOG" --force
+        fi
+      ) >"$TEMP_DIR/$index.out" 2>&1 &
+      pids[index]=$!
+      BACKGROUND_PIDS+=("${pids[index]}")
+    done
+    for ((index = start; index < end; index++)); do
+      if wait "${pids[index]}"; then
+        printf 'Updated %s.\n' "${names[index]}"
+      else
+        cat "$TEMP_DIR/$index.out" >&2
+        status=1
+      fi
+    done
+  done
+  BACKGROUND_PIDS=()
+  rm -rf -- "$TEMP_DIR"
+  TEMP_DIR=''
+  return "$status"
 }
 
 run_updates() {
-  local dry_run=$1 output status exact_updates name source selector hidden
-  local -a regular_names=() command=(gh skill update)
+  local dry_run=$1 name source selector hidden
 
   if [[ "$dry_run" == true ]]; then
     run_update_signals
     return
   fi
 
-  mapfile -t regular_names < <(jq -r '
-    .skills[] |
-    select((.selector | endswith("/SKILL.md") | not) and ((.hidden // false) | not)) |
-    .name
-  ' "$MANIFEST")
-
-  exact_updates="$(inspect_exact_path_updates)"
-  if ((${#regular_names[@]} > 0)); then
-    printf 'Checking discoverable skills: %d\n' "${#regular_names[@]}" >&2
-    command+=("${regular_names[@]}" --dir "$CATALOG")
-    [[ "$dry_run" == false ]] || command+=(--dry-run)
-    if output="$("${command[@]}" 2>&1)"; then
-      status=0
-    else
-      status=$?
-    fi
-  else
-    output=''
-    status=0
-  fi
-  ((status == 0)) || { printf '%s\n' "$output" >&2; return "$status"; }
-
-  if [[ -n "$exact_updates" ]]; then
-    output="$(sed '/^All skills are up to date\.$/d' <<<"$output")"
-  elif [[ -z "$output" ]]; then
-    output='All skills are up to date.'
-  fi
-  [[ -z "$output" ]] || printf '%s\n' "$output"
-
+  run_update_signals false || return "$?"
+  [[ -s "$TEMP_FILE" ]] || return 0
   while IFS=$'\t' read -r name source selector hidden; do
-    [[ -z "$name" ]] || printf 'Update available: %s (from %s)\n' "$name" "$source"
-  done <<<"$exact_updates"
-  [[ "$dry_run" == true || -z "$exact_updates" ]] && return 0
+    printf 'Update available: %s (from %s)\n' "$name" "$source"
+  done <"$TEMP_FILE"
 
   printf '\n'
   confirm_yes 'Update exact-path skills?' || {
     printf 'Skipped exact-path updates.\n'
     return 0
   }
-
-  while IFS=$'\t' read -r name source selector hidden; do
-    if [[ "$hidden" == true ]]; then
-      quiet_skill_install "$source" "$selector" --dir "$CATALOG" --force --allow-hidden-dirs
-    else
-      quiet_skill_install "$source" "$selector" --dir "$CATALOG" --force
-    fi
-    printf 'Updated %s.\n' "$name"
-  done <<<"$exact_updates"
+  apply_exact_updates
 }
 
 install_missing() {
