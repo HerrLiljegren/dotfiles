@@ -50,7 +50,8 @@ add_optional_setup() {
     *) die "unknown optional setup: $requested" ;;
   esac
 
-  for existing in "${OPTIONAL_SETUPS[@]}"; do
+  # The ${a[@]+...} form keeps empty arrays safe under set -u on Bash 3.2 (macOS).
+  for existing in ${OPTIONAL_SETUPS[@]+"${OPTIONAL_SETUPS[@]}"}; do
     [[ "$existing" == "$requested" ]] && return
   done
 
@@ -125,7 +126,7 @@ else
   normalize_optional_setups
 fi
 
-for optional_setup in "${OPTIONAL_SETUPS[@]}"; do
+for optional_setup in ${OPTIONAL_SETUPS[@]+"${OPTIONAL_SETUPS[@]}"}; do
   case "$optional_setup" in
     herdr-plugins)
       command -v herdr >/dev/null 2>&1 || die 'herdr is required for herdr-plugins'
@@ -196,12 +197,29 @@ migrate_legacy_directory() {
 
     while [[ "$parent" != "$destination" ]]; do
       [[ -d "$parent" && ! -L "$parent" ]] || break
-      rmdir --ignore-fail-on-non-empty -- "$parent"
+      remove_empty_directory "$parent"
       parent="$(dirname -- "$parent")"
     done
   done
 
-  rmdir --ignore-fail-on-non-empty -- "$destination"
+  remove_empty_directory "$destination"
+}
+
+# Portable replacement for GNU rmdir --ignore-fail-on-non-empty.
+remove_empty_directory() {
+  [[ -z "$(ls -A -- "$1")" ]] || return 0
+  rmdir -- "$1"
+}
+
+# Print the SHA-256 of a file with GNU coreutils or the macOS shasum fallback.
+sha256_of() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum -- "$1" | awk '{ print $1 }'
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 -- "$1" | awk '{ print $1 }'
+  else
+    return 1
+  fi
 }
 
 configure_herdr() {
@@ -294,9 +312,7 @@ configure_bat_cache() {
   local current=''
 
   command -v bat >/dev/null 2>&1 || return 0
-  command -v sha256sum >/dev/null 2>&1 || return 0
-
-  expected="$(sha256sum "$theme" | awk '{ print $1 }')"
+  expected="$(sha256_of "$theme")" || return 0
   [[ -f "$marker" ]] && current="$(<"$marker")"
   [[ "$current" == "$expected" ]] && return
 
@@ -345,6 +361,12 @@ link_path \
   "$ROOT/config/ghostty" \
   "$XDG_CONFIG_HOME/ghostty" \
   "../dotfiles/ghostty/.config/ghostty"
+if [[ "$(uname -s)" == Darwin ]]; then
+  # Ghostty on macOS loads this file after the XDG config.
+  link_path \
+    "$ROOT/config/ghostty/macos.config" \
+    "$HOME/Library/Application Support/com.mitchellh.ghostty/config"
+fi
 link_path "$ROOT/config/glow" "$XDG_CONFIG_HOME/glow"
 configure_herdr "$ROOT/config/herdr" "$XDG_CONFIG_HOME/herdr"
 link_path "$ROOT/config/hunk" "$XDG_CONFIG_HOME/hunk"
@@ -385,7 +407,7 @@ ensure_block \
   "[include]
     path = \"$ROOT/git/config\""
 
-for optional_setup in "${OPTIONAL_SETUPS[@]}"; do
+for optional_setup in ${OPTIONAL_SETUPS[@]+"${OPTIONAL_SETUPS[@]}"}; do
   case "$optional_setup" in
     herdr-plugins)
       section 'Herdr plugins'

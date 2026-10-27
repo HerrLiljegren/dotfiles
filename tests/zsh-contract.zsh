@@ -39,7 +39,7 @@ whence -w -- -ftb-complete | grep -Fq "function" ||
   dotfiles_contract_fail "OMZ-compatible Git aliases were not loaded"
 [[ "${aliases[ghelp]}" == 'git-aliases' ]] ||
   dotfiles_contract_fail "the Git alias guide shortcut was not loaded"
-[[ "${galiases[C]}" == '| wl-copy' ]] ||
+[[ "${galiases[C]}" == '| wl-copy' || ( $OSTYPE == darwin* && "${galiases[C]}" == '| pbcopy' ) ]] ||
   dotfiles_contract_fail "the global clipboard alias C was not loaded"
 (( $+functions[y] )) ||
   dotfiles_contract_fail "the Yazi directory-changing helper was not loaded"

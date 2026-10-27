@@ -17,6 +17,8 @@ fail() {
   exit 1
 }
 
+. "$ROOT/tests/lib/pty.sh"
+
 mkdir -p -- "$TEST_HOME" "$FAKE_BIN"
 printf '%s\n' \
   '#!/usr/bin/env bash' \
@@ -37,7 +39,6 @@ expected_calls="$(printf '%s\n' \
   'plugin install third774/herdr-last-workspace --yes' \
   'plugin install devashish2203/herdr-worktrunk --yes' \
   'plugin install beyondlex/herdr-recent-navigator --yes' \
-  'plugin install StructuPath/herdr-browser --yes' \
   'plugin install thanhdat77/herdr-navigator --yes' \
   'plugin install zenbu-labs/terminal-browser/herdr-plugin --yes' \
   'plugin install zenbu-labs/terminal-code/herdr-plugin --yes')"
@@ -80,12 +81,12 @@ actual_calls="$(<"$HERDR_LOG")"
 
 : >"$HERDR_LOG"
 printf '\n' | \
-  env \
+  run_in_pty env \
     PATH="$FAKE_BIN:$PATH" \
     HOME="$TEST_HOME" \
     XDG_CONFIG_HOME="$TEST_HOME/.config" \
     HERDR_TEST_LOG="$HERDR_LOG" \
-    script -qefc "$ROOT/install.sh" /dev/null \
+    "$ROOT/install.sh" \
     >"$TEST_ROOT/interactive-dotfiles.log"
 
 grep -Fq 'Choose what to install:' "$TEST_ROOT/interactive-dotfiles.log" || fail 'interactive install did not show the selection prompt'
@@ -96,12 +97,12 @@ grep -Fq '==> Complete' "$TEST_ROOT/interactive-dotfiles.log" || fail 'interacti
 
 : >"$HERDR_LOG"
 printf '2\n' | \
-  env \
+  run_in_pty env \
     PATH="$FAKE_BIN:$PATH" \
     HOME="$TEST_HOME" \
     XDG_CONFIG_HOME="$TEST_HOME/.config" \
     HERDR_TEST_LOG="$HERDR_LOG" \
-    script -qefc "$ROOT/install.sh" /dev/null \
+    "$ROOT/install.sh" \
     >"$TEST_ROOT/interactive-all.log"
 
 grep -Fq '==> Herdr plugins' "$TEST_ROOT/interactive-all.log" || fail 'interactive everything selection omitted the Herdr progress section'

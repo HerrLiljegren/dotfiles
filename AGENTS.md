@@ -3,13 +3,14 @@
 ## Scope
 
 This repository contains public, portable development configuration for Linux,
-WSL, and Linux-based devcontainers.
+WSL, Linux-based devcontainers, and macOS terminals.
 
 ## Working agreements
 
 - Keep configuration free of credentials, personal identity, employer names,
   private hosts, and absolute user home paths.
-- Keep `install.sh` dependency-free beyond Bash and standard Linux utilities.
+- Keep `install.sh` dependency-free beyond Bash and standard Linux utilities,
+  and runnable on macOS's Bash 3.2 and BSD userland.
 - Do not install applications or project runtimes from this repository.
 - Preserve existing user configuration and Git credential helpers.
 - Never set or unset `ZDOTDIR`; callers such as VS Code own it during startup.

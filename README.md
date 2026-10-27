@@ -1,7 +1,7 @@
 # Portable development dotfiles
 
-Shared, credential-free configuration for Linux, WSL, and Linux-based dev
-containers. Host packages, graphical desktop settings, identity, and other
+Shared, credential-free configuration for Linux, WSL, Linux-based dev
+containers, and macOS terminals. Host packages, graphical desktop settings, identity, and other
 machine-specific setup remain outside this repository.
 
 ## Managed configuration
@@ -39,6 +39,25 @@ Automation can choose explicitly:
 ```
 
 Run `./install.sh --help` for the current options.
+
+### macOS
+
+Homebrew is a prerequisite; the installer never installs it or any tools. The
+installer runs on the stock Bash 3.2, but the shell tools and tests expect
+Homebrew's Bash on `PATH` ahead of `/bin/bash`. Install the configured tools
+with Homebrew before running the installer:
+
+```bash
+brew install bash neovim starship git-delta fzf zoxide bat btop glow hunk \
+  lazygit worktrunk eza fd ov yazi jq
+brew install --cask ghostty font-jetbrains-mono-nerd-font
+```
+
+On macOS the shell exports `XDG_CONFIG_HOME=~/.config` so tools that default to
+`~/Library` read the linked configuration, and the `C` global alias pipes to
+`pbcopy`. The installer also links `config/ghostty/macos.config` into Ghostty's
+Application Support path: Cmd keeps Ghostty's native copy, paste, and zoom keys,
+the Linux Ctrl bindings go back to the terminal, and Option acts as Alt.
 
 ## Local shell configuration
 

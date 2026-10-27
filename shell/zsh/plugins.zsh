@@ -15,7 +15,7 @@ zstyle ':fzf-tab:complete:cd:*' fzf-preview \
 zstyle ':completion:*:*:*:*:processes' command \
   "ps -u $USER -o pid,user,comm -w -w"
 zstyle ':fzf-tab:complete:(kill|ps):argument-rest' fzf-preview \
-  '[[ $group == "[process ID]" ]] && ps --pid=$word -o cmd --no-headers -w -w'
+  '[[ $group == "[process ID]" ]] && ps -p $word -o command= -w -w'
 zstyle ':fzf-tab:complete:(-command-|-parameter-|-brace-parameter|export|unset|expand):*' \
   fzf-preview 'print -r -- ${(P)word}'
 zstyle ':fzf-tab:*' fzf-flags '--preview-window=right:75%'

@@ -41,5 +41,5 @@ grep -Fq $'\033[38;2;203;166;247m󰒋' "$TEST_ROOT/fzf-input.log"
 grep -Fq 'proxmox.example.test:2222' "$TEST_ROOT/fzf-input.log"
 grep -Fq '~/.ssh/id_test' "$TEST_ROOT/fzf-input.log"
 identity_columns="$(cut -f2- "$TEST_ROOT/fzf-input.log" | sed -E $'s/\\x1B\\[[0-9;]*m//g' | awk '{ print index($0, "󰌆") }' | sort -u)"
-[[ "$(wc -l <<<"$identity_columns")" == 1 ]]
+(( $(wc -l <<<"$identity_columns") == 1 ))
 printf 'ssh-to test passed\n'

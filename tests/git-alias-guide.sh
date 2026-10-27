@@ -11,6 +11,8 @@ fail() {
   exit 1
 }
 
+. "$ROOT/tests/lib/pty.sh"
+
 declare -A selected=()
 declare -A documented=()
 
@@ -56,7 +58,7 @@ detail_output="$($GUIDE_COMMAND --plain glg)"
 all_output="$(NO_COLOR=1 "$GUIDE_COMMAND" --all)"
 [[ "$all_output" != *$'\033'* ]] || fail 'NO_COLOR output contains ANSI escapes'
 
-color_output="$(env -u NO_COLOR TERM=xterm-256color script -qefc "$GUIDE_COMMAND glg" /dev/null)"
+color_output="$(run_in_pty env -u NO_COLOR TERM=xterm-256color "$GUIDE_COMMAND" glg </dev/null)"
 [[ "$color_output" == *$'\033['* ]] || fail 'interactive guide output has no ANSI styling'
 
 if "$GUIDE_COMMAND" --plain unknown-alias >/dev/null 2>&1; then

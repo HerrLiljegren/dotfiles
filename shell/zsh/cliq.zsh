@@ -81,7 +81,7 @@ cliq() {
   local force=0
   local -a request=()
   local arg='' question='' reply='' cmd='' verdict='' confirm=''
-  local model='' system_prompt=''
+  local model='' system_prompt='' os=Linux
 
   for arg in "$@"; do
     case "$arg" in
@@ -98,7 +98,8 @@ cliq() {
 
   question="${(j: :)request}"
   model="${CLIQ_MODEL:-opencode-go/deepseek-v4-flash}"
-  system_prompt='You are an expert Zsh user on Linux. Reply with ONLY a single-line shell command that fulfills the request. Output no explanation, no markdown fences, no commentary, and no leading prompt marker.'
+  [[ $OSTYPE == darwin* ]] && os=macOS
+  system_prompt="You are an expert Zsh user on $os."' Reply with ONLY a single-line shell command that fulfills the request. Output no explanation, no markdown fences, no commentary, and no leading prompt marker.'
 
   # Layer 0: the model can only print text. -nt disables tools, -nc skips
   # AGENTS.md context, and --no-session keeps the run ephemeral.

@@ -16,6 +16,8 @@ fail() {
   exit 1
 }
 
+. "$ROOT/tests/lib/pty.sh"
+
 mkdir -p -- "$TEST_HOME/.config"
 mkdir -p -- "$TEST_HOME/.codex"
 printf '# existing bash config\n' >"$TEST_HOME/.bashrc"
@@ -80,6 +82,10 @@ grep -Fq 'existing-model' "$TEST_HOME/.codex/config.toml" || fail 'Codex config 
 [[ -L "$TEST_HOME/.config/lazygit" ]] || fail 'Lazygit config was not linked'
 [[ "$(readlink -- "$TEST_HOME/.config/ghostty")" == "$ROOT/config/ghostty" ]] ||
   fail 'legacy Ghostty config was not migrated'
+if [[ "$(uname -s)" == Darwin ]]; then
+  [[ "$(readlink -- "$TEST_HOME/Library/Application Support/com.mitchellh.ghostty/config")" == "$ROOT/config/ghostty/macos.config" ]] ||
+    fail 'macOS Ghostty overrides were not linked'
+fi
 [[ -L "$TEST_HOME/.config/hunk" ]] || fail 'Hunk config was not linked'
 [[ -d "$TEST_HOME/.local/bin" && ! -L "$TEST_HOME/.local/bin" ]] || fail '.local/bin was not created as a real directory'
 [[ -L "$TEST_HOME/.local/bin/git-aliases" ]] || fail 'Git alias guide was not linked'
@@ -119,14 +125,13 @@ DOTFILES_CONTRACT_ASSERT="$ROOT/tests/zsh-contract.zsh" \
   zsh -ic 'source "$DOTFILES_CONTRACT_ASSERT"'
 
 history_cursor_log="$TEST_ROOT/zsh-history-cursor.log"
-if ! env -u ZDOTDIR \
+if ! run_in_pty env -u ZDOTDIR \
   HOME="$TEST_HOME" \
   XDG_CONFIG_HOME="$TEST_HOME/.config" \
   TERM=xterm-256color \
   DOTFILES_TEST_ROOT="$ROOT" \
-    script -qefc \
-      'zsh -dfi "$DOTFILES_TEST_ROOT/tests/zsh-history-cursor.zsh"' \
-      /dev/null >"$history_cursor_log"
+    zsh -dfi "$ROOT/tests/zsh-history-cursor.zsh" </dev/null \
+      >"$history_cursor_log"
 then
   cat "$history_cursor_log" >&2
   fail 'Zsh history cursor contract failed'
@@ -162,6 +167,8 @@ XDG_CONFIG_HOME="$TEST_HOME/.config" \
 
 [[ ! -L "$TEST_HOME/.config/starship.toml" ]] || fail 'starship symlink remained after uninstall'
 [[ ! -L "$TEST_HOME/.config/ghostty" ]] || fail 'Ghostty symlink remained after uninstall'
+[[ ! -L "$TEST_HOME/Library/Application Support/com.mitchellh.ghostty/config" ]] ||
+  fail 'macOS Ghostty symlink remained after uninstall'
 [[ ! -L "$TEST_HOME/.config/yazi" ]] || fail 'Yazi symlink remained after uninstall'
 [[ ! -L "$TEST_HOME/.config/btop" ]] || fail 'Btop symlink remained after uninstall'
 [[ ! -L "$TEST_HOME/.config/lazygit" ]] || fail 'Lazygit symlink remained after uninstall'

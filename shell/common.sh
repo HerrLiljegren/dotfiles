@@ -9,6 +9,12 @@ done
 unset bin_dir
 export PATH
 
+# macOS tools such as Lazygit and Glow default to ~/Library; point them at the
+# ~/.config paths the installer links.
+if [ "$(uname -s)" = Darwin ]; then
+  export XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}"
+fi
+
 if command -v nvim >/dev/null 2>&1; then
   export EDITOR=nvim
   export VISUAL=nvim
@@ -91,6 +97,8 @@ path() {
 
 if command -v ss >/dev/null 2>&1; then
   alias ports='ss -lntup' # Show listening TCP and UDP ports.
+elif command -v lsof >/dev/null 2>&1; then
+  alias ports='lsof -nP -iTCP -sTCP:LISTEN' # Show listening TCP ports (macOS).
 fi
 
 if command -v lazygit >/dev/null 2>&1; then

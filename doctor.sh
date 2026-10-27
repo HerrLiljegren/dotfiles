@@ -22,6 +22,18 @@ tools=(
 
 missing=0
 
+# macOS installs the configured tools through Homebrew, and the shell tools
+# need its Bash ahead of /bin/bash (3.2).
+if [[ "$(uname -s)" == Darwin ]]; then
+  tools=(brew "${tools[@]}")
+  if ((BASH_VERSINFO[0] >= 4)); then
+    printf 'ok      bash %s\n' "${BASH_VERSION%%(*}"
+  else
+    printf 'old     bash %s; put Homebrew Bash ahead of /bin/bash on PATH\n' "${BASH_VERSION%%(*}"
+    missing=1
+  fi
+fi
+
 for tool in "${tools[@]}"; do
   if command -v "$tool" >/dev/null 2>&1; then
     printf 'ok      %s\n' "$tool"

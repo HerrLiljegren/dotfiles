@@ -2,7 +2,11 @@
 
 setopt auto_cd interactive_comments
 alias reload='exec zsh'
-alias -g C='| wl-copy'
+if [[ $OSTYPE == darwin* ]]; then
+  alias -g C='| pbcopy'
+else
+  alias -g C='| wl-copy'
+fi
 
 y() {
   local cwd_file cwd yazi_status

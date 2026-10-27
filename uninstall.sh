@@ -54,6 +54,9 @@ unlink_path "$ROOT/config/bat" "$XDG_CONFIG_HOME/bat"
 unlink_path "$ROOT/config/btop" "$XDG_CONFIG_HOME/btop"
 unlink_path "$ROOT/config/delta" "$XDG_CONFIG_HOME/delta"
 unlink_path "$ROOT/config/ghostty" "$XDG_CONFIG_HOME/ghostty"
+unlink_path \
+  "$ROOT/config/ghostty/macos.config" \
+  "$HOME/Library/Application Support/com.mitchellh.ghostty/config"
 unlink_path "$ROOT/config/glow" "$XDG_CONFIG_HOME/glow"
 unlink_path "$ROOT/config/herdr/config.toml" "$XDG_CONFIG_HOME/herdr/config.toml"
 unlink_path "$ROOT/config/hunk" "$XDG_CONFIG_HOME/hunk"
