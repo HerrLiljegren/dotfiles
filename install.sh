@@ -381,6 +381,8 @@ link_path "$ROOT/bin/git-aliases" "$HOME/.local/bin/git-aliases"
 link_path "$ROOT/bin/skillset" "$HOME/.local/bin/skillset"
 link_path "$ROOT/bin/ssh-to" "$HOME/.local/bin/ssh-to"
 link_path "$ROOT/agents/AGENTS.md" "$HOME/.agents/AGENTS.md"
+link_path "$ROOT/agents/commit-style.md" "$HOME/.agents/commit-style.md"
+link_path "$ROOT/agents/dotnet-defaults.md" "$HOME/.agents/dotnet-defaults.md"
 link_path \
   "$ROOT/agents/AGENTS.md" \
   "$HOME/.codex/AGENTS.md" \

@@ -47,6 +47,12 @@ assert_link "$TEST_HOME/.pi/agent/AGENTS.md"
 assert_link "$TEST_CONFIG/opencode/AGENTS.md"
 assert_link "$TEST_HOME/.copilot/copilot-instructions.md"
 
+for reference in commit-style dotnet-defaults; do
+  [[ "$(readlink -- "$TEST_HOME/.agents/$reference.md")" == "$ROOT/agents/$reference.md" ]] ||
+    fail "$reference reference was not linked"
+  [[ -s "$TEST_HOME/.agents/$reference.md" ]] || fail "$reference reference is unreadable"
+done
+
 grep -Fq 'existing host guidance' \
   "$TEST_HOME/.agents/AGENTS.md.pre-dotfiles" ||
   fail 'existing neutral guidance was not backed up'
@@ -82,5 +88,9 @@ grep -Fq 'existing OpenCode guidance' "$TEST_CONFIG/opencode/AGENTS.md" ||
   fail 'managed Pi guidance remained after uninstall'
 [[ ! -e "$TEST_HOME/.copilot/copilot-instructions.md" ]] ||
   fail 'managed Copilot guidance remained after uninstall'
+for reference in commit-style dotnet-defaults; do
+  [[ ! -e "$TEST_HOME/.agents/$reference.md" && ! -L "$TEST_HOME/.agents/$reference.md" ]] ||
+    fail "$reference reference remained after uninstall"
+done
 
 printf 'agent guidance link tests passed\n'

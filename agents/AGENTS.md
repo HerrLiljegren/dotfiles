@@ -1,6 +1,8 @@
 # Shared agent working agreements
 
-- No fallbacks.
+- Preserve the requested behavior and verification standard. Use supported
+  alternatives when they preserve both. Report meaningful limitations; never
+  hide failures or silently weaken correctness, security, or evidence.
 - Lead with the outcome and keep explanations proportionate to the task.
 - Preserve unrelated user changes and call out overlapping edits.
 - Comment non-obvious decisions, constraints, and failure modes that the code
@@ -14,6 +16,12 @@
   rule blocks progress, cite its file and wording and the missing decision.
 - Report the outcome, verification evidence, and remaining gates; distinguish
   local results from pending CI or human verification.
+
+## Publication scope
+
+Keep advisory plans, scratch artifacts and agent accounting local unless
+publication is part of the requested deliverable. Before publishing, compare
+both the staged changes and the final changed-file list with the agreed scope.
 
 ## Verification
 
@@ -30,47 +38,11 @@
   targets in the required configuration. Report scope, results, and log paths
   concisely instead of repeatedly streaming full output.
 
-## Commit style
+## Task-specific defaults
 
-When a repository does not define another convention, use lowercase
-Conventional Commit subjects:
-
-```text
-type(scope): description
-```
-
-- Prefer a meaningful scope identifying the affected component.
-- Omit the scope only for a genuinely repository-wide change without one clear
-  owner.
-- Use one of `build`, `chore`, `ci`, `docs`, `feat`, `fix`, `perf`, `refactor`,
-  `revert`, `style`, or `test`.
-- Add `!` before the colon only for a breaking change.
-- Keep the subject under 72 characters with a concise, lowercase, imperative
-  description and no final period.
-- For simple changes, use only the subject.
-- For material changes, prefer a concise bullet-list body:
-  - use 2-5 - bullets
-  - use lowercase sentence fragments, except where casing is semantically
-    significant
-  - start with an imperative verb when practical
-  - describe behavior, rationale, or consequences rather than changed files
-  - do not repeat the subject
-  - omit final periods for short single-sentence bullets
-  - wrap body lines at 72 characters
-
-## .NET solution and project defaults
-
-For new .NET solutions unless explicitly requested otherwise:
-
-- Put shared MSBuild settings in `build/DotNet.props` and test settings in
-  `build/DotNet.Tests.props`, imported through root `Directory.Build.props`.
-- Use root `Directory.Packages.props` with
-  `ManagePackageVersionsCentrally=true`. Keep versions out of
-  `PackageReference` entries.
-- Default tests to TUnit on Microsoft.Testing.Platform. Configure the runner in
-  `global.json`.
-- Name projects by role without a product prefix: `Cli.csproj`,
-  `Application.csproj`, and `Cli.Tests.csproj`.
+- Before creating or amending a commit, read `~/.agents/commit-style.md`.
+  Use lowercase Conventional Commit subjects unless the repository overrides it.
+- When creating a new .NET solution, read `~/.agents/dotnet-defaults.md`.
 
 ## Worktrees
 

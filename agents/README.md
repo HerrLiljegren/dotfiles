@@ -13,6 +13,9 @@ global instruction path:
 ~/.copilot/copilot-instructions.md
 ```
 
+The installer also links `commit-style.md` and `dotnet-defaults.md` into
+`~/.agents/`. Global guidance loads them only for their named tasks.
+
 Repository `AGENTS.md` files remain closer, project-specific guidance.
 `~/.agents/local.md` is an optional unmanaged escape hatch for private host and
 workspace routing. Do not put credentials, authentication state, private
