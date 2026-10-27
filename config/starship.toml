@@ -2,7 +2,7 @@
 add_newline = true
 palette = "catppuccin_mocha"
 format = """
-[╭─](overlay0)$username$hostname${env_var.WORKBENCH_STATE_DIR}$directory$git_branch$git_commit$git_state$git_status$dotnet$docker_context
+[╭─](overlay0)$username$hostname${env_var.WORKBENCH_STATE_DIR}$directory$git_branch$git_commit$git_state$git_status${custom.minver}$dotnet$docker_context
 [╰─](overlay0)$character
 """
 right_format = "$cmd_duration$jobs"
@@ -114,3 +114,14 @@ format = "[$duration]($style) "
 [jobs]
 symbol = "󰜎 "
 style = "bold sapphire"
+
+# Match the CLI's v-prefixed tags and rc.0 prerelease convention.
+[custom.minver]
+when = '''
+command -v minver >/dev/null 2>&1 &&
+root=$(git rev-parse --show-toplevel 2>/dev/null) &&
+git -C "$root" grep -qiE '<Package(Reference|Version)[^>]*Include="MinVer"' -- '*.csproj' '*.fsproj' '*.props'
+'''
+command = 'minver --tag-prefix v --minimum-major-minor 3.0 --default-pre-release-identifiers rc.0 --verbosity error'
+format = ' [v$output]($style) '
+style = 'bold mauve'
