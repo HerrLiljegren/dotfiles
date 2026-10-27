@@ -1,0 +1,11 @@
+{
+  // Shared Markdown lint defaults for Neovim. Project rules can override these.
+  "config": {
+    "MD013": {
+      "line_length": 100,
+      "tables": false,
+      "code_blocks": false,
+      "strict": false
+    }
+  }
+}
