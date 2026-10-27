@@ -41,7 +41,8 @@ expected_calls="$(printf '%s\n' \
   'plugin install beyondlex/herdr-recent-navigator --yes' \
   'plugin install thanhdat77/herdr-navigator --yes' \
   'plugin install zenbu-labs/terminal-browser/herdr-plugin --yes' \
-  'plugin install zenbu-labs/terminal-code/herdr-plugin --yes')"
+  'plugin install zenbu-labs/terminal-code/herdr-plugin --yes' \
+  'plugin install kryptamine/herdr-auto-title --yes')"
 actual_calls="$(<"$HERDR_LOG")"
 
 [[ "$actual_calls" == "$expected_calls" ]] || {
