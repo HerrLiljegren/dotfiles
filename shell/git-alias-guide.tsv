@@ -17,6 +17,8 @@ history	gsh	Show a commit or Git object.	When inspecting one specific revision.	
 history	glo	Show decorated one-line history from HEAD.	When scanning recent commits quickly.	It keeps commit identity, subject, and refs on one line.	glo -10
 history	glog	Show a decorated one-line graph from HEAD.	When understanding merges in current history.	The graph exposes branch topology without verbose patches.	glog -15
 history	gloga	Show the decorated graph across all refs.	When locating commits across branches and remotes.	It reveals relationships that HEAD-only history omits.	gloga
+history	glol	Show the decorated graph with author and relative date from HEAD.	When you need to know who made each commit and how long ago.	It adds author identity and relative timing to the graph view.	glol -10
+history	glola	Show the decorated graph with author and relative date across all refs.	When tracing who touched which branch and when.	It extends the author-and-relative-date view to every ref.	glola
 history	glg	Show history with changed-file statistics.	When reviewing the scope of recent commits.	It connects each commit to the files it touched.	glg -5
 history	glgp	Show history with statistics and full patches.	When a commit-by-commit code review needs full detail.	It combines history, file scope, and exact changes.	glgp -2
 commits	gc	Create a commit with the staged diff visible in the editor.	When writing a considered commit message.	The staged diff provides context while composing the message.	gc
