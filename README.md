@@ -89,6 +89,14 @@ for commands classified as dangerous. Executed suggestions are logged under
 Herdr plugins are installed only when selecting `herdr-plugins` or `all`.
 Their sources are declared in `config/herdr/plugins.tsv`.
 
+## Windows helpers
+
+`windows/` holds helpers for Windows machines that are not linked by
+`install.sh`. Each helper has its own README. Currently:
+
+- `windows/ssh-clip`: push the Windows clipboard image or file to a Linux host
+  over SSH, so a remote program can paste it.
+
 ## Dev containers
 
 A dev-container setup should install required binaries, clone this repository

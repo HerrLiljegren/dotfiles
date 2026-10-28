@@ -3,7 +3,8 @@
 ## Scope
 
 This repository contains public, portable development configuration for Linux,
-WSL, Linux-based devcontainers, and macOS terminals.
+WSL, Linux-based devcontainers, and macOS terminals. Windows-only helpers live
+under `windows/` and are not managed by `install.sh`.
 
 ## Working agreements
 
