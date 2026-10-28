@@ -2,7 +2,7 @@
 
 autoload -Uz compinit
 mkdir -p -- "${XDG_CACHE_HOME:-$HOME/.cache}/zsh"
-compinit -d "${XDG_CACHE_HOME:-$HOME/.cache}/zsh/zcompdump"
+compinit -i -d "${XDG_CACHE_HOME:-$HOME/.cache}/zsh/zcompdump"
 
 export FZF_CTRL_R_OPTS="--border-label=' history ' --tiebreak=index"
 export FZF_COMPLETION_TRIGGER='**'

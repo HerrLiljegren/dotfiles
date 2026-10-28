@@ -54,6 +54,13 @@ if [ -d "$dotnet_trust_dir" ]; then
 fi
 unset dotnet_trust_dir
 
+# Homebrew's dotnet keeps the runtime outside its bin link, so app hosts such
+# as the Mason-installed Roslyn language server cannot find .NET without this.
+if [ -z "${DOTNET_ROOT:-}" ] && [ -n "${HOMEBREW_PREFIX:-}" ] &&
+  [ -d "$HOMEBREW_PREFIX/opt/dotnet/libexec" ]; then
+  export DOTNET_ROOT="$HOMEBREW_PREFIX/opt/dotnet/libexec"
+fi
+
 # Directory navigation and listing.
 alias -- -='cd -'        # Move to the previous directory.
 alias ..='cd ..'         # Move up one directory.
