@@ -1,0 +1,4 @@
+# Third-party files keep their upstream formatting.
+vendor/
+config/yazi/flavors/
+config/yazi/plugins/

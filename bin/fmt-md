@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# Format Markdown the way Neovim does on save. Prettier picks the nearest config, so a
+# repository's own settings win over ~/.prettierrc.json.
+set -euo pipefail
+
+usage() { printf 'usage: fmt-md [--check] FILE...\n' >&2; exit 2; }
+
+mode=--write
+if [[ "${1-}" == --check ]]; then
+  mode=--check
+  shift
+fi
+[[ $# -gt 0 ]] || usage
+
+# Prefer the repository's pinned Prettier, then PATH, then the copy Neovim's Mason installed.
+find_prettier() {
+  local dir
+  dir="$(cd -- "$(dirname -- "$1")" && pwd)"
+  while :; do
+    if [[ -x "$dir/node_modules/.bin/prettier" ]]; then
+      printf '%s\n' "$dir/node_modules/.bin/prettier"
+      return
+    fi
+    [[ "$dir" != / ]] || break
+    dir="$(dirname -- "$dir")"
+  done
+  if command -v prettier >/dev/null 2>&1; then
+    command -v prettier
+    return
+  fi
+  local mason="${XDG_DATA_HOME:-$HOME/.local/share}/nvim/mason/bin/prettier"
+  if [[ -x "$mason" ]]; then
+    printf '%s\n' "$mason"
+    return
+  fi
+  printf 'fmt-md: prettier not found (repository node_modules, PATH or Mason)\n' >&2
+  return 1
+}
+
+status=0
+for file in "$@"; do
+  [[ -f "$file" ]] || { printf 'fmt-md: not a file: %s\n' "$file" >&2; status=1; continue; }
+  prettier="$(find_prettier "$file")" || exit 1
+  "$prettier" "$mode" --log-level warn -- "$file" || status=1
+done
+exit "$status"

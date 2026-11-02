@@ -43,6 +43,9 @@ both the staged changes and the final changed-file list with the agreed scope.
 - Before creating or amending a commit, read `~/.agents/commit-style.md`.
   Use lowercase Conventional Commit subjects unless the repository overrides it.
 - When creating a new .NET solution, read `~/.agents/dotnet-defaults.md`.
+- After writing or editing Markdown, run `fmt-md <file>...` unless your harness
+  already does. It applies the repository's Prettier config, or the home
+  default when the repository has none. Don't reformat files you didn't change.
 
 ## Worktrees
 
