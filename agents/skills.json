@@ -6,77 +6,77 @@
       "source": "mattpocock/skills",
       "selector": "engineering/ask-matt",
       "description": "Ask which skill or flow fits your situation. A router over the skills in this repo.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "aspire",
       "source": "microsoft/aspire-skills",
       "selector": "skills/aspire/SKILL.md",
       "description": "Operate Aspire AppHosts, resources, logs, traces, configuration, and deployment workflows.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "code-review",
       "source": "mattpocock/skills",
       "selector": "code-review",
       "description": "Review changes against repository standards and the originating specification.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "codebase-design",
       "source": "mattpocock/skills",
       "selector": "codebase-design",
       "description": "Design deep modules, interfaces, seams, and testable boundaries.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "defuddle",
       "source": "kepano/obsidian-skills",
       "selector": "defuddle",
       "description": "Extract clean Markdown from web pages.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "diagnosing-bugs",
       "source": "mattpocock/skills",
       "selector": "diagnosing-bugs",
       "description": "Run a structured diagnosis loop for difficult failures and regressions.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "domain-modeling",
       "source": "mattpocock/skills",
       "selector": "domain-modeling",
       "description": "Establish project terminology, concepts, relationships, and decisions.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "dotnet-inspect",
       "source": "richlander/dotnet-inspect",
       "selector": "skills/dotnet-inspect/SKILL.md",
       "description": "Query .NET APIs across NuGet packages, platform libraries, and local files.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "find-skills",
       "source": "vercel-labs/skills",
       "selector": "find-skills",
       "description": "Discover appropriate installable agent skills.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "frontend-design",
       "source": "anthropics/skills",
       "selector": "frontend-design",
       "description": "Create distinctive, polished web interfaces and prototypes.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "generate-writeup",
       "source": "pamelafox/presentation-skills",
       "selector": "generate-writeup",
       "description": "Generate an annotated blog-style write-up from a presentation''s slides and video recording. Orchestrates the full pipeline: fetching slides, converting to images, extracting transcript, generating chapters, outlining slides, and producing the final annotated markdown. USE FOR: write-up, blog post, presentation summary, annotated write-up, generate writeup.",
-      "enabled": true,
+      "enabled": false,
       "hidden": true
     },
     {
@@ -84,42 +84,42 @@
       "source": "mattpocock/skills",
       "selector": "grill-with-docs",
       "description": "Combine a structured interview with persistent supporting documents.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "grilling",
       "source": "mattpocock/skills",
       "selector": "grilling",
       "description": "Stress-test an idea through dependency-ordered questions.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "handoff",
       "source": "mattpocock/skills",
       "selector": "handoff",
       "description": "Prepare context for continuing work in another session or agent.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "herdr",
       "source": "ogulcancelik/herdr",
       "selector": "herdr",
       "description": "Inspect and control Herdr panes, spaces, tabs, and agents.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "implement",
       "source": "mattpocock/skills",
       "selector": "implement",
       "description": "Run an opinionated implementation, review, and commit workflow.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "implement-spec",
       "source": "mattpocock/skills",
       "selector": "implement-spec",
       "description": "Implement the result of /to-spec and /to-tickets in code.",
-      "enabled": true,
+      "enabled": false,
       "hidden": false
     },
     {
@@ -127,14 +127,14 @@
       "source": "shadcn/improve",
       "selector": "improve",
       "description": "Survey a codebase read-only and produce prioritized implementation plans.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "improve-codebase-architecture",
       "source": "mattpocock/skills",
       "selector": "improve-codebase-architecture",
       "description": "Investigate codebase architecture and produce an improvement report.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "json-canvas",
@@ -148,7 +148,7 @@
       "source": "kunchenguid/lavish-axi",
       "selector": "lavish",
       "description": "Turn complex or visual agent responses into rich, reviewable HTML artifacts the user can annotate and send feedback on, using the lavish-axi CLI. Use when about to give a plan, comparison, diagram, table, code diff, report, or anything easier to grasp visually than as prose.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "loop-me",
@@ -169,28 +169,28 @@
       "source": "kepano/obsidian-skills",
       "selector": "obsidian-cli",
       "description": "Operate Obsidian vaults, notes, plugins, themes, and diagnostics.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "obsidian-markdown",
       "source": "kepano/obsidian-skills",
       "selector": "obsidian-markdown",
       "description": "Author Obsidian Flavored Markdown.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "okf",
       "source": "scaccogatto/okf-skills",
       "selector": "okf",
       "description": "Author and maintain Open Knowledge Format bundles.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "ponytail",
       "source": "DietrichGebert/ponytail",
       "selector": "ponytail",
       "description": "Push coding toward the smallest solution that works.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "ponytail-audit",
@@ -211,14 +211,14 @@
       "source": "DietrichGebert/ponytail",
       "selector": "ponytail-review",
       "description": "Review a diff specifically for removable complexity.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "pr",
       "source": "mattpocock/skills",
       "selector": "pr",
       "description": "Use when writing a PR body.",
-      "enabled": true,
+      "enabled": false,
       "hidden": false
     },
     {
@@ -226,21 +226,21 @@
       "source": "mblode/agent-skills",
       "selector": "presentation-creator",
       "description": "Creates bold, minimal presentations built on a story spine, with punchy slide copy, high-contrast visual design (full-bleed palettes or dark with section accents), and conversational speaker notes. Covers live talks, async/recorded decks, 10-slide investor pitch decks, and decks built as a web app with a route per slide and live demos. Use when creating a presentation, structuring a deck, writing slides, building a pitch deck for investors, fixing a deck that has no narrative, or asking \"outline a presentation about...\", \"write slides for...\", \"design a deck for...\", \"turn this doc into a deck\", \"my talk has no story\", or \"build this deck as a website\". For long-form articles use the external ghostwriter skill with platform blog; for marketing copy outside slides use copywriting; for product UI design systems use ui-design.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "prototype",
       "source": "mattpocock/skills",
       "selector": "prototype",
       "description": "Build throwaway prototypes to answer design questions.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "research",
       "source": "mattpocock/skills",
       "selector": "research",
       "description": "Investigate primary sources and capture findings in the repository.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "resolving-merge-conflicts",
@@ -254,7 +254,7 @@
       "source": "mattpocock/skills",
       "selector": "retro",
       "description": "Conduct a retrospective on a coding session.",
-      "enabled": true,
+      "enabled": false,
       "hidden": false
     },
     {
@@ -262,7 +262,7 @@
       "source": "pamelafox/presentation-skills",
       "selector": "review-presentation",
       "description": "Use this to review slides for accuracy",
-      "enabled": true,
+      "enabled": false,
       "hidden": true
     },
     {
@@ -270,14 +270,14 @@
       "source": "datalust/seqcli",
       "selector": "src/SeqCli/Skills/Resources/seq-search-and-query/SKILL.md",
       "description": "Search and query logs and spans in Seq.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "setup-matt-pocock-skills",
       "source": "mattpocock/skills",
       "selector": "setup-matt-pocock-skills",
       "description": "Configure this repo for the engineering skills: set up its issue tracker, triage label vocabulary, and domain doc layout. Run once before first use of the other engineering skills.",
-      "enabled": true,
+      "enabled": false,
       "hidden": false
     },
     {
@@ -285,14 +285,14 @@
       "source": "humanlayer/skills",
       "selector": "plugins/show-me/skills/show-me/SKILL.md",
       "description": "Help the user understand the current topic visually with concise diagrams, code-shape sketches, and focused HTML artifacts.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "tdd",
       "source": "mattpocock/skills",
       "selector": "tdd",
       "description": "Drive development through red-green-refactor and integration tests.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "teach",
@@ -306,35 +306,35 @@
       "source": "cursor/plugins",
       "selector": "thermos/skills/thermo-nuclear-code-quality-review/SKILL.md",
       "description": "Run an extremely strict maintainability and abstraction review.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "to-spec",
       "source": "mattpocock/skills",
       "selector": "to-spec",
       "description": "Turn discussion or requirements into an implementation specification.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "to-tickets",
       "source": "mattpocock/skills",
       "selector": "to-tickets",
       "description": "Decompose a specification into tracker-ready tickets.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "triage",
       "source": "mattpocock/skills",
       "selector": "triage",
       "description": "Investigate and classify tracker issues.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "validate",
       "source": "scaccogatto/okf-skills",
       "selector": "validate",
       "description": "Validate or migrate an Open Knowledge Format bundle.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "visualize",
@@ -348,21 +348,21 @@
       "source": "mattpocock/skills",
       "selector": "productivity/wait-what",
       "description": "Stop. That last message did not land — re-pitch it.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "wayfinder",
       "source": "mattpocock/skills",
       "selector": "wayfinder",
       "description": "Explore an unfamiliar codebase and plot implementation direction.",
-      "enabled": true
+      "enabled": false
     },
     {
       "name": "writing-for-agents",
       "source": "mattpocock/skills",
       "selector": "productivity/writing-for-agents",
       "description": "Writing documents for agents. Use when creating or editing skills, or modifying AGENTS.md or CLAUDE.md.",
-      "enabled": true
+      "enabled": false
     }
   ]
 }
