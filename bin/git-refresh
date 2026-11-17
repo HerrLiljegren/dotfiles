@@ -1,0 +1,282 @@
+#!/usr/bin/env bash
+# Refresh main, master and develop for the repository containing the current
+# directory. Branches checked out in a worktree are pulled there; branches that
+# are not checked out are fast-forwarded without touching a working tree.
+set -uo pipefail
+
+usage() {
+  cat <<'EOF'
+usage: git-refresh [--dry-run]
+
+Fetch every remote in the repository containing the current directory, then
+fast-forward the local main, master and develop branches. Branches checked out
+in any worktree are refreshed in that worktree with --autostash. Diverged
+branches are reported and left alone; nothing is merged, rebased or forced.
+
+  --dry-run   report what would change without updating any branch
+              (remotes are still fetched, so the report is current)
+  -h, --help  show this help
+
+Exit status: 0 when every branch is current or updated, 1 when a branch needs
+attention, 2 for usage errors or when run outside a Git working tree.
+EOF
+}
+
+dry_run=0
+while (($#)); do
+  case $1 in
+    --dry-run) dry_run=1 ;;
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    *)
+      printf 'git-refresh: unknown argument: %s\n' "$1" >&2
+      usage >&2
+      exit 2
+      ;;
+  esac
+  shift
+done
+
+root=$(git rev-parse --show-toplevel 2>/dev/null) ||
+  {
+    printf 'git-refresh: not inside a Git working tree\n' >&2
+    exit 2
+  }
+name=$(basename -- "$root")
+
+if [[ -t 1 && -z ${NO_COLOR-} && ${TERM-} != dumb ]]; then
+  green=$'\033[32m'
+  yellow=$'\033[33m'
+  red=$'\033[31m'
+  dim=$'\033[2m'
+  reset=$'\033[0m'
+else
+  green='' yellow='' red='' dim='' reset=''
+fi
+
+status_line() {
+  printf '  %s%s%s %-9s %s\n' "$1" "$2" "$reset" "$3" "$4"
+}
+
+show_git_output() {
+  printf '%s\n' "$1" |
+    sed -e '/^[[:space:]]*$/d' -e '/^From /d' |
+    tail -n 6 |
+    while IFS= read -r line; do
+      printf '      %s\n' "$line"
+    done
+}
+
+pull_failure_reason() {
+  case $1 in
+    *'Applying autostash resulted in conflicts'*) printf 'stashed changes conflict with the update' ;;
+    *'Not possible to fast-forward'*) printf 'local commits prevent a fast-forward' ;;
+    *'would be overwritten by merge'* | *'would be overwritten by checkout'*) printf 'working tree changes conflict with incoming files' ;;
+    *"couldn't find remote ref"* | *'could not find remote ref'*) printf 'remote branch no longer exists' ;;
+    *'Authentication failed'* | *'Permission denied (publickey)'* | *'could not read Username'*) printf 'authentication failed' ;;
+    *'Could not resolve host'* | *'unable to access'* | *'Connection refused'* | *'Connection timed out'*) printf 'remote is unavailable' ;;
+    *'CONFLICT'*) printf 'update produced conflicts' ;;
+    *) printf 'pull failed' ;;
+  esac
+}
+
+# Print the path of the worktree that has the branch checked out, if any.
+worktree_for_branch() {
+  local branch=$1 wt='' line
+  while IFS= read -r line; do
+    case $line in
+      'worktree '*) wt=${line#worktree } ;;
+      'branch refs/heads/'*)
+        if [[ ${line#branch refs/heads/} == "$branch" ]]; then
+          printf '%s\n' "$wt"
+          return 0
+        fi
+        ;;
+    esac
+  done < <(git -C "$root" worktree list --porcelain 2>/dev/null)
+  return 1
+}
+
+# Print "<remote>\t<merge ref>" for a branch, falling back to origin when the
+# branch has no configured upstream but origin has a matching branch.
+branch_upstream() {
+  local branch=$1 remote merge
+  remote=$(git config --get "branch.$branch.remote" 2>/dev/null || true)
+  merge=$(git config --get "branch.$branch.merge" 2>/dev/null || true)
+
+  if [[ -n $remote && $remote != . && -n $merge ]] && git remote | grep -Fxq -- "$remote"; then
+    printf '%s\t%s\n' "$remote" "$merge"
+    return 0
+  fi
+  if git show-ref --verify --quiet "refs/remotes/origin/$branch"; then
+    printf 'origin\trefs/heads/%s\n' "$branch"
+    return 0
+  fi
+  return 1
+}
+
+branches=()
+for branch in main master develop; do
+  if git show-ref --verify --quiet "refs/heads/$branch"; then
+    branches+=("$branch")
+  fi
+done
+
+if ((${#branches[@]} == 0)); then
+  printf 'git-refresh: no main, master or develop branch in %s\n' "$name"
+  exit 0
+fi
+
+# Fetch each remote separately so one broken remote does not hide the others.
+failed_remotes=''
+while IFS= read -r remote; do
+  [[ -n $remote ]] || continue
+  if ! output=$(git -C "$root" fetch --prune "$remote" 2>&1); then
+    printf '  %s✗%s fetch %s failed\n' "$red" "$reset" "$remote"
+    show_git_output "$output"
+    failed_remotes="$failed_remotes $remote"
+  fi
+done < <(git -C "$root" remote)
+
+updated=0
+current=0
+skipped=0
+failed=0
+would_update=0
+local_ahead=0
+
+for branch in "${branches[@]}"; do
+  if ! upstream=$(branch_upstream "$branch"); then
+    status_line "$dim" '–' "$branch" 'no upstream'
+    skipped=$((skipped + 1))
+    continue
+  fi
+  IFS=$'\t' read -r remote merge <<<"$upstream"
+  remote_branch=${merge#refs/heads/}
+  tracking_ref="refs/remotes/$remote/$remote_branch"
+
+  case " $failed_remotes " in
+    *" $remote "*)
+      status_line "$red" '✗' "$branch" "cannot check: fetch of $remote failed"
+      failed=$((failed + 1))
+      continue
+      ;;
+  esac
+
+  if ! git show-ref --verify --quiet "$tracking_ref"; then
+    status_line "$dim" '–' "$branch" "no $remote/$remote_branch"
+    skipped=$((skipped + 1))
+    continue
+  fi
+
+  if ! counts=$(git -C "$root" rev-list --left-right --count "refs/heads/$branch...$tracking_ref" 2>/dev/null); then
+    status_line "$red" '✗' "$branch" "cannot compare with $remote/$remote_branch"
+    failed=$((failed + 1))
+    continue
+  fi
+  read -r ahead behind <<<"$counts"
+
+  if ((behind == 0)); then
+    if ((ahead > 0)); then
+      if ((ahead == 1)); then noun=commit; else noun=commits; fi
+      status_line "$yellow" '✓' "$branch" "current ($ahead local $noun not pushed)"
+      local_ahead=$((local_ahead + 1))
+    else
+      status_line "$green" '✓' "$branch" 'current'
+    fi
+    current=$((current + 1))
+    continue
+  fi
+
+  if ((ahead > 0)); then
+    status_line "$red" '✗' "$branch" "diverged ($ahead local, $behind remote); not changed"
+    failed=$((failed + 1))
+    continue
+  fi
+
+  if ((dry_run)); then
+    if ((behind == 1)); then noun=commit; else noun=commits; fi
+    status_line "$yellow" '→' "$branch" "would pull $behind $noun"
+    would_update=$((would_update + 1))
+    continue
+  fi
+
+  if worktree=$(worktree_for_branch "$branch"); then
+    before=$(git -C "$worktree" rev-parse --short HEAD 2>/dev/null || true)
+    if output=$(git -C "$worktree" pull --ff-only --autostash "$remote" "$remote_branch" 2>&1); then
+      # pull --autostash can exit 0 even when reapplying the stash conflicts.
+      if [[ $output == *'Applying autostash resulted in conflicts'* ]] ||
+        [[ -n $(git -C "$worktree" ls-files -u 2>/dev/null) ]]; then
+        stash_ref=$(git -C "$worktree" stash list --format='%gd' 2>/dev/null | sed -n '1p')
+        reason="pulled, but stashed changes conflict"
+        [[ -z $stash_ref ]] || reason="$reason (stash $stash_ref in $worktree)"
+        status_line "$red" '✗' "$branch" "$reason"
+        show_git_output "$output"
+        failed=$((failed + 1))
+      else
+        after=$(git -C "$worktree" rev-parse --short HEAD 2>/dev/null || true)
+        if ((behind == 1)); then noun=commit; else noun=commits; fi
+        status_line "$green" '↑' "$branch" "pulled $behind $noun ($before..$after)"
+        updated=$((updated + 1))
+      fi
+    else
+      reason=$(pull_failure_reason "$output")
+      if [[ $output == *'Applying autostash resulted in conflicts'* ]]; then
+        stash_ref=$(git -C "$worktree" stash list --format='%gd' 2>/dev/null | sed -n '1p')
+        reason="pulled, but stashed changes conflict"
+        [[ -z $stash_ref ]] || reason="$reason; changes kept in stash $stash_ref"
+      fi
+      status_line "$red" '✗' "$branch" "$reason"
+      show_git_output "$output"
+      failed=$((failed + 1))
+    fi
+  else
+    if output=$(git -C "$root" fetch "$remote" "$merge:refs/heads/$branch" 2>&1); then
+      if ((behind == 1)); then noun=commit; else noun=commits; fi
+      status_line "$green" '↑' "$branch" "pulled $behind $noun (not checked out)"
+      updated=$((updated + 1))
+    else
+      status_line "$red" '✗' "$branch" "$(pull_failure_reason "$output")"
+      show_git_output "$output"
+      failed=$((failed + 1))
+    fi
+  fi
+done
+
+if ((failed > 0)); then
+  if ((failed == 1)); then noun=branch; else noun=branches; fi
+  printf '%sgit-refresh: %s: %d %s need attention%s\n' \
+    "$red" "$name" "$failed" "$noun" "$reset"
+  exit 1
+fi
+
+if ((dry_run)); then
+  if ((would_update == 0)); then
+    printf '%s✓ %s is up to date%s\n' "$green" "$name" "$reset"
+  else
+    if ((would_update == 1)); then noun=branch; else noun=branches; fi
+    printf '%s→ %s: %d %s would be updated%s\n' \
+      "$yellow" "$name" "$would_update" "$noun" "$reset"
+  fi
+  exit 0
+fi
+
+if ((updated == 0)); then
+  printf '%s✓ %s is up to date%s' "$green" "$name" "$reset"
+  if ((local_ahead > 0)); then
+    printf ' (%d with local commits)' "$local_ahead"
+  fi
+  if ((skipped > 0)); then
+    printf ' (%d skipped)' "$skipped"
+  fi
+  printf '\n'
+else
+  printf '%s✓ %s refreshed: %d updated, %d already current%s' \
+    "$green" "$name" "$updated" "$current" "$reset"
+  if ((skipped > 0)); then
+    printf ' (%d skipped)' "$skipped"
+  fi
+  printf '\n'
+fi
