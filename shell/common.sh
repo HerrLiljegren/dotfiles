@@ -1,6 +1,6 @@
 # Shared interactive shell configuration for Bash and Zsh.
 
-for bin_dir in "$HOME/.local/bin" "$HOME/.devcontainers/bin" "$HOME/.cargo/bin"; do
+for bin_dir in "$HOME/.local/bin" "$HOME/.devcontainers/bin" "$HOME/.cargo/bin" "$HOME/.dotnet/tools"; do
   case ":$PATH:" in
   *":$bin_dir:"*) ;;
   *) PATH="$bin_dir:$PATH" ;;
