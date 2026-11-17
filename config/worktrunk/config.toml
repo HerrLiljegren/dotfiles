@@ -1,5 +1,5 @@
-# Keep worktrees inside their repository so the configuration is portable.
-worktree-path = "{{ repo_path }}/.worktrees/{{ branch | sanitize }}"
+# Group worktrees by project under a shared development directory.
+worktree-path = "~/dev/worktrees/{{ repo }}/{{ branch | sanitize }}"
 
 [switch]
 cd = true
