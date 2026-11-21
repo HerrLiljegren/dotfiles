@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Format Markdown the way Neovim does on save. Prettier picks the nearest config, so a
-# repository's own settings win over ~/.prettierrc.json.
+# repository's own settings win over ~/.prettierrc.json. A Vite+ repository formats with its own
+# `vp fmt` instead, so edits keep the line breaks that repository's formatter keeps.
 set -euo pipefail
 
 usage() { printf 'usage: fmt-md [--check] FILE...\n' >&2; exit 2; }
@@ -37,9 +38,34 @@ find_prettier() {
   return 1
 }
 
+# The nearest directory whose vite.config imports vite-plus, when vp is installed.
+find_vite_plus_root() {
+  command -v vp >/dev/null 2>&1 || return 1
+  local dir config
+  dir="$(cd -- "$(dirname -- "$1")" && pwd)"
+  while :; do
+    for config in "$dir"/vite.config.{ts,mts,cts,js,mjs,cjs}; do
+      if [[ -f "$config" ]] && grep -q "from ['\"]vite-plus['\"]" "$config"; then
+        printf '%s\n' "$dir"
+        return
+      fi
+    done
+    [[ "$dir" != / ]] || return 1
+    dir="$(dirname -- "$dir")"
+  done
+}
+
 status=0
 for file in "$@"; do
   [[ -f "$file" ]] || { printf 'fmt-md: not a file: %s\n' "$file" >&2; status=1; continue; }
+  if root="$(find_vite_plus_root "$file")"; then
+    path="$(cd -- "$(dirname -- "$file")" && pwd)/$(basename -- "$file")"
+    check=()
+    [[ "$mode" == --check ]] && check=(--check)
+    (cd -- "$root" && vp fmt "${check[@]}" --no-error-on-unmatched-pattern -- "$path" >/dev/null) ||
+      status=1
+    continue
+  fi
   prettier="$(find_prettier "$file")" || exit 1
   "$prettier" "$mode" --log-level warn -- "$file" || status=1
 done
