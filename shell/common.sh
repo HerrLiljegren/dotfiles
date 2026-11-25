@@ -120,6 +120,10 @@ if command -v btop >/dev/null 2>&1; then
   alias top='btop' # Use the enhanced process monitor.
 fi
 
+if command -v duf >/dev/null 2>&1; then
+  alias ds='duf --only local' # Show local disk space usage.
+fi
+
 if command -v bat >/dev/null 2>&1; then
   alias cat='bat' # Show files with syntax highlighting and paging.
 fi
